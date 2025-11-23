@@ -1090,61 +1090,103 @@
         // 標記為已讀（關閉 GitHub Issue）
         async function markAsRead(id) {
             try {
-                // 如果使用 GitHub Issues，這裡可以調用 API 關閉 Issue
-                // 目前先使用 localStorage 作為備用
-                const rawData = localStorage.getItem('whisperMessages');
-                if (rawData) {
-                    let messages = JSON.parse(rawData);
-                    if (Array.isArray(messages)) {
-                        const message = messages.find(m => m.id === id);
-                        if (message) {
-                            message.read = true;
-                            localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-issues';
+                const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+                
+                if (useAPI && typeof id === 'number' && id > 0) {
+                    // 使用 GitHub Issues API 關閉 Issue
+                    const closeApiEndpoint = 'https://oldfish-profile.vercel.app/api/close-issue';
+                    
+                    const response = await fetch(closeApiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            issueNumber: id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // 成功關閉 Issue，重新載入訊息
+                        loadMessages();
+                    } else {
+                        throw new Error(data.error || '關閉 Issue 失敗');
+                    }
+                } else {
+                    // 備用方案：使用 localStorage（僅用於開發測試）
+                    const rawData = localStorage.getItem('whisperMessages');
+                    if (rawData) {
+                        let messages = JSON.parse(rawData);
+                        if (Array.isArray(messages)) {
+                            const message = messages.find(m => m.id === id);
+                            if (message) {
+                                message.read = true;
+                                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                            }
                         }
                     }
-                }
-                
-                // 重新載入訊息
-                loadMessages();
-                
-                // 提示：如果使用 GitHub Issues，可以在 GitHub 上直接關閉 Issue
-                if (typeof id === 'number' && id > 0) {
-                    console.log(`提示：可以在 GitHub 上關閉 Issue #${id}`);
+                    
+                    // 重新載入訊息
+                    loadMessages();
                 }
             } catch (error) {
                 console.error('標記為已讀時發生錯誤:', error);
-                alert('操作失敗，請重試');
+                alert('操作失敗：' + (error.message || '請重試'));
             }
         }
         
-        // 刪除訊息
-        function deleteMessage(id) {
-            if (!confirm('確定要刪除這則訊息嗎？')) {
+        // 刪除訊息（關閉 GitHub Issue）
+        async function deleteMessage(id) {
+            if (!confirm('確定要刪除這則訊息嗎？這將會關閉 GitHub Issue。')) {
                 return;
             }
             
             try {
-                // 如果使用 GitHub Issues，這裡可以調用 API 刪除 Issue
-                // 目前先使用 localStorage 作為備用
-                const rawData = localStorage.getItem('whisperMessages');
-                if (rawData) {
-                    let messages = JSON.parse(rawData);
-                    if (Array.isArray(messages)) {
-                        messages = messages.filter(m => m.id !== id);
-                        localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-issues';
+                const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+                
+                if (useAPI && typeof id === 'number' && id > 0) {
+                    // 使用 GitHub Issues API 關閉 Issue
+                    const closeApiEndpoint = 'https://oldfish-profile.vercel.app/api/close-issue';
+                    
+                    const response = await fetch(closeApiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            issueNumber: id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // 成功關閉 Issue，重新載入訊息
+                        loadMessages();
+                    } else {
+                        throw new Error(data.error || '刪除失敗');
                     }
-                }
-                
-                // 重新載入訊息
-                loadMessages();
-                
-                // 提示：如果使用 GitHub Issues，可以在 GitHub 上直接刪除 Issue
-                if (typeof id === 'number' && id > 0) {
-                    console.log(`提示：可以在 GitHub 上刪除 Issue #${id}`);
+                } else {
+                    // 備用方案：使用 localStorage（僅用於開發測試）
+                    const rawData = localStorage.getItem('whisperMessages');
+                    if (rawData) {
+                        let messages = JSON.parse(rawData);
+                        if (Array.isArray(messages)) {
+                            messages = messages.filter(m => m.id !== id);
+                            localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                        }
+                    }
+                    
+                    // 重新載入訊息
+                    loadMessages();
                 }
             } catch (error) {
                 console.error('刪除訊息時發生錯誤:', error);
-                alert('刪除失敗，請重試');
+                alert('刪除失敗：' + (error.message || '請重試'));
             }
         }
         
