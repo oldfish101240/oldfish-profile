@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="老魚 oldfish - 悄悄話管理後台">
+    <title>悄悄話管理後台 - 老魚 oldfish</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        // 在頁面渲染前立即讀取並應用主題設定，避免閃爍
+        (function() {
+            // 優先讀取 URL 參數（跳轉時傳遞的主題）
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlTheme = urlParams.get('theme');
+            let theme;
+
+            if (urlTheme === 'dark' || urlTheme === 'light') {
+                // 如果 URL 中有主題參數，使用它並更新 localStorage
+                theme = urlTheme;
+                localStorage.setItem('theme', theme);
+            } else {
+                // 否則從 localStorage 讀取
+                theme = localStorage.getItem('theme') || 'dark';
+            }
+            
+            document.documentElement.setAttribute('data-theme', theme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', theme);
+            }
+        })();
+    </script>
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .admin-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .admin-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .admin-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .messages-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        
+        .messages-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .messages-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .messages-list {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .message-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+        
+        .message-item:hover {
+            background: var(--bg-section);
+        }
+        
+        .message-item:last-child {
+            border-bottom: none;
+        }
+        
+        .message-item.unread {
+            background: rgba(59, 130, 246, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .message-info {
+            flex: 1;
+        }
+        
+        .message-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .message-email {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .message-time {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        .message-content {
+            color: var(--text-primary);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-main);
+            border-radius: 8px;
+        }
+        
+        .message-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-action {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-mark-read {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-mark-read:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-delete {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #7C3AED;
+        }
+        
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state-text {
+            font-size: 1.2rem;
+        }
+        
+        .refresh-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+            
+            .admin-title {
+                font-size: 2rem;
+            }
+            
+            .admin-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .message-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .message-time {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景裝飾元素 -->
+    <div class="bg-decoration">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+
+    <!-- 導航列 -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html" style="text-decoration: none; color: inherit;">
+                    <span class="logo-text">老魚oldfish</span>
+                </a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
+                    <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 2V4M10 16V18M18 10H16M4 10H2M15.657 4.343L14.243 5.757M5.757 14.243L4.343 15.657M15.657 15.657L14.243 14.243M5.757 5.757L4.343 4.343" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M17.293 13.293C16.3785 14.2075 15.2354 14.8641 13.9959 15.2049C12.7564 15.5457 11.4578 15.5608 10.2106 15.2484C8.96335 14.936 7.80909 14.3046 6.87063 13.4161C5.93217 12.5276 5.24026 11.4127 4.86129 10.1801C4.48233 8.94756 4.42894 7.63681 4.70654 6.37518C4.98414 5.11355 5.58338 3.93846 6.44998 3.07187C7.31657 2.20527 8.49166 1.60604 9.75329 1.32844C11.0149 1.05084 12.3257 1.10423 13.5582 1.48319C14.7908 1.86215 15.9057 2.55407 16.7942 3.49253C17.6827 4.43099 18.3141 5.58525 18.6265 6.83246C18.9389 8.07967 18.9238 9.37828 18.583 10.6178C18.2422 11.8573 17.5856 13.0004 16.671 13.915L17.293 13.293Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 管理後台內容 -->
+    <section class="section section-contact" style="padding-top: 8rem;">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1 class="admin-title">悄悄話管理後台</h1>
+                <p class="admin-subtitle">查看和管理所有收到的悄悄話訊息</p>
+            </div>
+            
+            <!-- 統計卡片 -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-label">總訊息數</div>
+                    <div class="stat-value" id="totalMessages">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">未讀訊息</div>
+                    <div class="stat-value" id="unreadMessages">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">已讀訊息</div>
+                    <div class="stat-value" id="readMessages">0</div>
+                </div>
+            </div>
+            
+            <!-- 訊息列表 -->
+            <div class="messages-container">
+                <div class="messages-header">
+                    <h2 class="messages-title">所有訊息</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="refresh-btn" onclick="loadMessages()">🔄 重新整理</button>
+                        <button class="refresh-btn" onclick="showChangePasswordDialog()" style="background: var(--gradient-secondary);">🔐 更改密碼</button>
+                    </div>
+                </div>
+                <div class="messages-list" id="messagesList">
+                    <!-- 訊息將在這裡動態載入 -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 頁尾 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 老魚 oldfish.</p>
+                <p class="footer-note">(本頁面由cursor輔助製作)</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // ============================================
+        // 密碼保護（使用雜湊）
+        // ============================================
+        const PASSWORD_HASH_KEY = 'admin_password_hash';
+        const AUTH_KEY = 'admin_authenticated';
+        const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24小時
+        
+        // 使用 SHA-256 雜湊密碼
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        // 初始化預設密碼（僅在第一次使用時）
+        async function initDefaultPassword() {
+            const existingHash = localStorage.getItem(PASSWORD_HASH_KEY);
+            if (!existingHash) {
+                // 預設密碼：Andy0228
+                const defaultHash = await hashPassword('Andy0228');
+                localStorage.setItem(PASSWORD_HASH_KEY, defaultHash);
+                console.log('已初始化預設密碼');
+            }
+        }
+        
+        // 驗證密碼
+        async function verifyPassword(inputPassword) {
+            const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
+            if (!storedHash) {
+                await initDefaultPassword();
+                return await verifyPassword(inputPassword);
+            }
+            const inputHash = await hashPassword(inputPassword);
+            return inputHash === storedHash;
+        }
+        
+        // 更改密碼
+        async function changePassword(oldPassword, newPassword) {
+            const isValid = await verifyPassword(oldPassword);
+            if (!isValid) {
+                return { success: false, message: '舊密碼錯誤' };
+            }
+            if (newPassword.length < 4) {
+                return { success: false, message: '新密碼長度至少需要 4 個字元' };
+            }
+            const newHash = await hashPassword(newPassword);
+            localStorage.setItem(PASSWORD_HASH_KEY, newHash);
+            // 清除當前認證，需要重新登入
+            sessionStorage.removeItem(AUTH_KEY);
+            return { success: true, message: '密碼已更改，請重新登入' };
+        }
+        
+        function checkAuth() {
+            const authData = sessionStorage.getItem(AUTH_KEY);
+            if (authData) {
+                const { timestamp, authenticated } = JSON.parse(authData);
+                const now = Date.now();
+                // 檢查是否在有效時間內（24小時）
+                if (authenticated && (now - timestamp) < SESSION_DURATION) {
+                    return true;
+                } else {
+                    // 過期，清除認證
+                    sessionStorage.removeItem(AUTH_KEY);
+                }
+            }
+            return false;
+        }
+        
+        function showPasswordPrompt() {
+            // 隱藏主要內容
+            const mainContent = document.querySelector('.section');
+            if (mainContent) {
+                mainContent.style.display = 'none';
+            }
+            
+            // 創建密碼輸入界面
+            const passwordContainer = document.createElement('div');
+            passwordContainer.id = 'passwordContainer';
+            passwordContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: var(--bg-main);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            passwordContainer.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    padding: 3rem;
+                    border-radius: 24px;
+                    box-shadow: var(--shadow-xl);
+                    border: 1px solid var(--border-color);
+                    max-width: 400px;
+                    width: 90%;
+                    text-align: center;
+                ">
+                    <h2 style="
+                        font-size: 2rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
+                        margin-bottom: 0.5rem;
+                    ">管理後台</h2>
+                    <p style="
+                        color: var(--text-secondary);
+                        margin-bottom: 2rem;
+                    ">請輸入密碼以繼續</p>
+                    <input type="password" id="passwordInput" placeholder="輸入密碼" style="
+                        width: 100%;
+                        padding: 1rem;
+                        border: 2px solid var(--border-color);
+                        border-radius: 12px;
+                        background: var(--bg-main);
+                        color: var(--text-primary);
+                        font-size: 1rem;
+                        margin-bottom: 1rem;
+                        font-family: inherit;
+                        transition: all 0.3s ease;
+                    " autofocus>
+                    <div id="errorMessage" style="
+                        color: #EF4444;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        min-height: 1.5rem;
+                        display: none;
+                    "></div>
+                    <button id="submitPassword" style="
+                        width: 100%;
+                        padding: 1rem;
+                        background: var(--gradient-primary);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        font-size: 1.1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    ">確認</button>
+                </div>
+            `;
+            
+            document.body.appendChild(passwordContainer);
+            
+            const passwordInput = document.getElementById('passwordInput');
+            const submitBtn = document.getElementById('submitPassword');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            async function handleSubmit() {
+                const password = passwordInput.value.trim();
+                if (!password) {
+                    errorMsg.textContent = '請輸入密碼';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                submitBtn.disabled = true;
+                submitBtn.textContent = '驗證中...';
+                
+                try {
+                    // 初始化預設密碼（如果需要的話）
+                    await initDefaultPassword();
+                    
+                    const isValid = await verifyPassword(password);
+                    if (isValid) {
+                        // 認證成功
+                        const authData = {
+                            authenticated: true,
+                            timestamp: Date.now()
+                        };
+                        sessionStorage.setItem(AUTH_KEY, JSON.stringify(authData));
+                        passwordContainer.remove();
+                        if (mainContent) {
+                            mainContent.style.display = '';
+                        }
+                        // 載入訊息
+                        if (typeof loadMessages === 'function') {
+                            loadMessages();
+                        }
+                    } else {
+                        // 密碼錯誤
+                        errorMsg.textContent = '密碼錯誤，請重試';
+                        errorMsg.style.display = 'block';
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                        passwordInput.style.borderColor = '#EF4444';
+                        setTimeout(() => {
+                            passwordInput.style.borderColor = '';
+                        }, 2000);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '確認';
+                    }
+                } catch (error) {
+                    console.error('驗證密碼時發生錯誤:', error);
+                    errorMsg.textContent = '發生錯誤，請重試';
+                    errorMsg.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '確認';
+                }
+            }
+            
+            submitBtn.addEventListener('click', handleSubmit);
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                }
+            });
+        }
+        
+        // 更改密碼對話框
+        function showChangePasswordDialog() {
+            const dialog = document.createElement('div');
+            dialog.id = 'changePasswordDialog';
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+            `;
+            
+            dialog.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    padding: 2.5rem;
+                    border-radius: 24px;
+                    box-shadow: var(--shadow-xl);
+                    border: 1px solid var(--border-color);
+                    max-width: 450px;
+                    width: 90%;
+                ">
+                    <h3 style="
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
+                        margin-bottom: 1.5rem;
+                    ">更改密碼</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 0.5rem;
+                            font-size: 0.95rem;
+                        ">舊密碼</label>
+                        <input type="password" id="oldPasswordInput" placeholder="輸入舊密碼" style="
+                            width: 100%;
+                            padding: 0.9rem;
+                            border: 2px solid var(--border-color);
+                            border-radius: 12px;
+                            background: var(--bg-main);
+                            color: var(--text-primary);
+                            font-size: 1rem;
+                            font-family: inherit;
+                        " autofocus>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 0.5rem;
+                            font-size: 0.95rem;
+                        ">新密碼</label>
+                        <input type="password" id="newPasswordInput" placeholder="輸入新密碼（至少4個字元）" style="
+                            width: 100%;
+                            padding: 0.9rem;
+                            border: 2px solid var(--border-color);
+                            border-radius: 12px;
+                            background: var(--bg-main);
+                            color: var(--text-primary);
+                            font-size: 1rem;
+                            font-family: inherit;
+                        ">
+                    </div>
+                    <div id="changePasswordError" style="
+                        color: #EF4444;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        min-height: 1.5rem;
+                        display: none;
+                    "></div>
+                    <div id="changePasswordSuccess" style="
+                        color: #10B981;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        min-height: 1.5rem;
+                        display: none;
+                    "></div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button id="confirmChangePassword" style="
+                            flex: 1;
+                            padding: 0.9rem;
+                            background: var(--gradient-primary);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">確認更改</button>
+                        <button id="cancelChangePassword" style="
+                            flex: 1;
+                            padding: 0.9rem;
+                            background: var(--bg-section);
+                            color: var(--text-primary);
+                            border: 1px solid var(--border-color);
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">取消</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            
+            const oldPasswordInput = document.getElementById('oldPasswordInput');
+            const newPasswordInput = document.getElementById('newPasswordInput');
+            const confirmBtn = document.getElementById('confirmChangePassword');
+            const cancelBtn = document.getElementById('cancelChangePassword');
+            const errorMsg = document.getElementById('changePasswordError');
+            const successMsg = document.getElementById('changePasswordSuccess');
+            
+            async function handleChangePassword() {
+                const oldPassword = oldPasswordInput.value.trim();
+                const newPassword = newPasswordInput.value.trim();
+                
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+                
+                if (!oldPassword || !newPassword) {
+                    errorMsg.textContent = '請填寫所有欄位';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '處理中...';
+                
+                try {
+                    const result = await changePassword(oldPassword, newPassword);
+                    if (result.success) {
+                        successMsg.textContent = result.message;
+                        successMsg.style.display = 'block';
+                        setTimeout(() => {
+                            dialog.remove();
+                            // 重新顯示密碼輸入界面
+                            showPasswordPrompt();
+                        }, 2000);
+                    } else {
+                        errorMsg.textContent = result.message;
+                        errorMsg.style.display = 'block';
+                        oldPasswordInput.value = '';
+                        newPasswordInput.value = '';
+                        oldPasswordInput.focus();
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = '確認更改';
+                    }
+                } catch (error) {
+                    console.error('更改密碼時發生錯誤:', error);
+                    errorMsg.textContent = '發生錯誤，請重試';
+                    errorMsg.style.display = 'block';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '確認更改';
+                }
+            }
+            
+            confirmBtn.addEventListener('click', handleChangePassword);
+            cancelBtn.addEventListener('click', () => dialog.remove());
+            
+            // Enter 鍵提交
+            newPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleChangePassword();
+                }
+            });
+        }
+        
+        // 初始化預設密碼
+        initDefaultPassword();
+        
+        // 更改密碼對話框
+        function showChangePasswordDialog() {
+            const dialog = document.createElement('div');
+            dialog.id = 'changePasswordDialog';
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+            `;
+            
+            dialog.innerHTML = `
+                <div style="
+                    background: var(--bg-card);
+                    padding: 2.5rem;
+                    border-radius: 24px;
+                    box-shadow: var(--shadow-xl);
+                    border: 1px solid var(--border-color);
+                    max-width: 450px;
+                    width: 90%;
+                ">
+                    <h3 style="
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
+                        margin-bottom: 1.5rem;
+                    ">更改密碼</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 0.5rem;
+                            font-size: 0.95rem;
+                        ">舊密碼</label>
+                        <input type="password" id="oldPasswordInput" placeholder="輸入舊密碼" style="
+                            width: 100%;
+                            padding: 0.9rem;
+                            border: 2px solid var(--border-color);
+                            border-radius: 12px;
+                            background: var(--bg-main);
+                            color: var(--text-primary);
+                            font-size: 1rem;
+                            font-family: inherit;
+                        " autofocus>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 0.5rem;
+                            font-size: 0.95rem;
+                        ">新密碼</label>
+                        <input type="password" id="newPasswordInput" placeholder="輸入新密碼（至少4個字元）" style="
+                            width: 100%;
+                            padding: 0.9rem;
+                            border: 2px solid var(--border-color);
+                            border-radius: 12px;
+                            background: var(--bg-main);
+                            color: var(--text-primary);
+                            font-size: 1rem;
+                            font-family: inherit;
+                        ">
+                    </div>
+                    <div id="changePasswordError" style="
+                        color: #EF4444;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        min-height: 1.5rem;
+                        display: none;
+                    "></div>
+                    <div id="changePasswordSuccess" style="
+                        color: #10B981;
+                        font-size: 0.9rem;
+                        margin-bottom: 1rem;
+                        min-height: 1.5rem;
+                        display: none;
+                    "></div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button id="confirmChangePassword" style="
+                            flex: 1;
+                            padding: 0.9rem;
+                            background: var(--gradient-primary);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">確認更改</button>
+                        <button id="cancelChangePassword" style="
+                            flex: 1;
+                            padding: 0.9rem;
+                            background: var(--bg-section);
+                            color: var(--text-primary);
+                            border: 1px solid var(--border-color);
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">取消</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            
+            const oldPasswordInput = document.getElementById('oldPasswordInput');
+            const newPasswordInput = document.getElementById('newPasswordInput');
+            const confirmBtn = document.getElementById('confirmChangePassword');
+            const cancelBtn = document.getElementById('cancelChangePassword');
+            const errorMsg = document.getElementById('changePasswordError');
+            const successMsg = document.getElementById('changePasswordSuccess');
+            
+            async function handleChangePassword() {
+                const oldPassword = oldPasswordInput.value.trim();
+                const newPassword = newPasswordInput.value.trim();
+                
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+                
+                if (!oldPassword || !newPassword) {
+                    errorMsg.textContent = '請填寫所有欄位';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '處理中...';
+                
+                try {
+                    const result = await changePassword(oldPassword, newPassword);
+                    if (result.success) {
+                        successMsg.textContent = result.message;
+                        successMsg.style.display = 'block';
+                        setTimeout(() => {
+                            dialog.remove();
+                            // 重新顯示密碼輸入界面
+                            showPasswordPrompt();
+                        }, 2000);
+                    } else {
+                        errorMsg.textContent = result.message;
+                        errorMsg.style.display = 'block';
+                        oldPasswordInput.value = '';
+                        newPasswordInput.value = '';
+                        oldPasswordInput.focus();
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = '確認更改';
+                    }
+                } catch (error) {
+                    console.error('更改密碼時發生錯誤:', error);
+                    errorMsg.textContent = '發生錯誤，請重試';
+                    errorMsg.style.display = 'block';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '確認更改';
+                }
+            }
+            
+            confirmBtn.addEventListener('click', handleChangePassword);
+            cancelBtn.addEventListener('click', () => dialog.remove());
+            
+            // Enter 鍵提交
+            newPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleChangePassword();
+                }
+            });
+        }
+        
+        // 初始化預設密碼
+        initDefaultPassword();
+        
+        // 頁面載入時檢查認證
+        if (!checkAuth()) {
+            // 如果 DOM 已載入，立即顯示密碼提示
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showPasswordPrompt);
+            } else {
+                showPasswordPrompt();
+            }
+        }
+        
+        // 載入訊息
+        function loadMessages() {
+            // 調試：檢查 localStorage 是否可用
+            console.log('當前頁面 origin:', window.location.origin);
+            console.log('localStorage 是否可用:', typeof(Storage) !== "undefined");
+            
+            // 嘗試讀取所有相關的 key
+            console.log('所有 localStorage keys:', Object.keys(localStorage));
+            
+            const rawData = localStorage.getItem('whisperMessages');
+            console.log('從 localStorage 讀取的原始資料:', rawData);
+            console.log('資料類型:', typeof rawData);
+            
+            // 如果讀取不到，嘗試其他可能的 key
+            if (!rawData) {
+                console.warn('警告：無法讀取 whisperMessages，嘗試其他方式...');
+                // 檢查是否有其他格式的資料
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.includes('whisper') || key.includes('message')) {
+                        console.log('找到相關 key:', key, '=', localStorage.getItem(key));
+                    }
+                }
+            }
+            
+            let messages = [];
+            try {
+                messages = JSON.parse(rawData || '[]');
+            } catch (error) {
+                console.error('解析訊息時發生錯誤:', error);
+                messages = [];
+            }
+            
+            console.log('解析後的訊息:', messages);
+            console.log('訊息數量:', messages.length);
+            
+            const messagesList = document.getElementById('messagesList');
+            if (!messagesList) {
+                console.error('找不到 messagesList 元素');
+                return;
+            }
+            
+            // 更新統計
+            const total = messages.length;
+            const unread = messages.filter(m => !m.read).length;
+            const read = total - unread;
+            
+            const totalEl = document.getElementById('totalMessages');
+            const unreadEl = document.getElementById('unreadMessages');
+            const readEl = document.getElementById('readMessages');
+            
+            if (totalEl) totalEl.textContent = total;
+            if (unreadEl) unreadEl.textContent = unread;
+            if (readEl) readEl.textContent = read;
+            
+            // 清空列表
+            messagesList.innerHTML = '';
+            
+            if (messages.length === 0) {
+                messagesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">目前還沒有任何訊息</div>
+                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-light);">
+                            提示：請在 contact.html 提交訊息後再來查看
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 顯示訊息
+            messages.forEach(message => {
+                const messageItem = document.createElement('div');
+                messageItem.className = `message-item ${message.read ? '' : 'unread'}`;
+                messageItem.id = `message-${message.id}`;
+                
+                const date = new Date(message.timestamp);
+                const formattedDate = date.toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                messageItem.innerHTML = `
+                    <div class="message-header">
+                        <div class="message-info">
+                            <div class="message-name">${escapeHtml(message.name)}</div>
+                            <div class="message-email">${escapeHtml(message.email)}</div>
+                        </div>
+                        <div class="message-time">${formattedDate}</div>
+                    </div>
+                    <div class="message-content">${escapeHtml(message.message)}</div>
+                    <div class="message-actions">
+                        ${!message.read ? `<button class="btn-action btn-mark-read" onclick="markAsRead(${message.id})">標記為已讀</button>` : ''}
+                        <button class="btn-action btn-delete" onclick="deleteMessage(${message.id})">刪除</button>
+                    </div>
+                `;
+                
+                messagesList.appendChild(messageItem);
+            });
+        }
+        
+        // 標記為已讀
+        function markAsRead(id) {
+            let messages = JSON.parse(localStorage.getItem('whisperMessages') || '[]');
+            const message = messages.find(m => m.id === id);
+            if (message) {
+                message.read = true;
+                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                loadMessages();
+            }
+        }
+        
+        // 刪除訊息
+        function deleteMessage(id) {
+            if (confirm('確定要刪除這則訊息嗎？')) {
+                let messages = JSON.parse(localStorage.getItem('whisperMessages') || '[]');
+                messages = messages.filter(m => m.id !== id);
+                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                loadMessages();
+            }
+        }
+        
+        // HTML 轉義（防止 XSS）
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 頁面載入時載入訊息
+        function initAdmin() {
+            console.log('管理後台頁面已載入');
+            try {
+                loadMessages();
+            } catch (error) {
+                console.error('載入訊息時發生錯誤:', error);
+                const messagesList = document.getElementById('messagesList');
+                if (messagesList) {
+                    messagesList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-text">載入訊息時發生錯誤</div>
+                            <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-light);">
+                                錯誤：${error.message}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAdmin);
+        } else {
+            // 如果 DOM 已載入，稍等一下確保所有元素都已渲染
+            setTimeout(initAdmin, 100);
+        }
+        
+        // 添加調試功能：在控制台顯示所有訊息
+        window.debugMessages = function() {
+            const messages = JSON.parse(localStorage.getItem('whisperMessages') || '[]');
+            console.table(messages);
+            console.log('訊息數量:', messages.length);
+            return messages;
+        };
+        
+        // 手動重新載入訊息
+        window.reloadMessages = function() {
+            console.log('手動重新載入訊息');
+            loadMessages();
+        };
+        
+        console.log('提示：在控制台輸入 debugMessages() 可以查看所有訊息');
+        console.log('提示：在控制台輸入 reloadMessages() 可以重新載入訊息');
+    </script>
+</body>
+</html>
+
