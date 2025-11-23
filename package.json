@@ -1,0 +1,8 @@
+{
+  "name": "oldfish-profile",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "老魚 oldfish 的個人介紹網站",
+  "private": true
+}
+
