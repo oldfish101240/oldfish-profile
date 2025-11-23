@@ -925,39 +925,39 @@
         
         // 載入訊息
         function loadMessages() {
-            // 調試：檢查 localStorage 是否可用
-            console.log('當前頁面 origin:', window.location.origin);
-            console.log('localStorage 是否可用:', typeof(Storage) !== "undefined");
-            
-            // 嘗試讀取所有相關的 key
-            console.log('所有 localStorage keys:', Object.keys(localStorage));
+            // 檢查 localStorage 是否可用
+            if (typeof(Storage) === "undefined") {
+                const messagesList = document.getElementById('messagesList');
+                if (messagesList) {
+                    messagesList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-text">瀏覽器不支援 localStorage</div>
+                        </div>
+                    `;
+                }
+                return;
+            }
             
             const rawData = localStorage.getItem('whisperMessages');
-            console.log('從 localStorage 讀取的原始資料:', rawData);
-            console.log('資料類型:', typeof rawData);
+            let messages = [];
             
-            // 如果讀取不到，嘗試其他可能的 key
-            if (!rawData) {
-                console.warn('警告：無法讀取 whisperMessages，嘗試其他方式...');
-                // 檢查是否有其他格式的資料
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.includes('whisper') || key.includes('message')) {
-                        console.log('找到相關 key:', key, '=', localStorage.getItem(key));
+            if (rawData) {
+                try {
+                    messages = JSON.parse(rawData);
+                    // 確保是陣列
+                    if (!Array.isArray(messages)) {
+                        console.warn('訊息資料格式不正確，重置為空陣列');
+                        messages = [];
+                        localStorage.setItem('whisperMessages', '[]');
                     }
+                } catch (error) {
+                    console.error('解析訊息時發生錯誤:', error);
+                    messages = [];
                 }
             }
             
-            let messages = [];
-            try {
-                messages = JSON.parse(rawData || '[]');
-            } catch (error) {
-                console.error('解析訊息時發生錯誤:', error);
-                messages = [];
-            }
-            
-            console.log('解析後的訊息:', messages);
-            console.log('訊息數量:', messages.length);
+            console.log('載入訊息數量:', messages.length);
             
             const messagesList = document.getElementById('messagesList');
             if (!messagesList) {
@@ -1030,22 +1030,44 @@
         
         // 標記為已讀
         function markAsRead(id) {
-            let messages = JSON.parse(localStorage.getItem('whisperMessages') || '[]');
-            const message = messages.find(m => m.id === id);
-            if (message) {
-                message.read = true;
-                localStorage.setItem('whisperMessages', JSON.stringify(messages));
-                loadMessages();
+            try {
+                const rawData = localStorage.getItem('whisperMessages');
+                if (!rawData) return;
+                
+                let messages = JSON.parse(rawData);
+                if (!Array.isArray(messages)) return;
+                
+                const message = messages.find(m => m.id === id);
+                if (message) {
+                    message.read = true;
+                    localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                    loadMessages();
+                }
+            } catch (error) {
+                console.error('標記為已讀時發生錯誤:', error);
+                alert('操作失敗，請重試');
             }
         }
         
         // 刪除訊息
         function deleteMessage(id) {
-            if (confirm('確定要刪除這則訊息嗎？')) {
-                let messages = JSON.parse(localStorage.getItem('whisperMessages') || '[]');
+            if (!confirm('確定要刪除這則訊息嗎？')) {
+                return;
+            }
+            
+            try {
+                const rawData = localStorage.getItem('whisperMessages');
+                if (!rawData) return;
+                
+                let messages = JSON.parse(rawData);
+                if (!Array.isArray(messages)) return;
+                
                 messages = messages.filter(m => m.id !== id);
                 localStorage.setItem('whisperMessages', JSON.stringify(messages));
                 loadMessages();
+            } catch (error) {
+                console.error('刪除訊息時發生錯誤:', error);
+                alert('刪除失敗，請重試');
             }
         }
         

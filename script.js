@@ -245,102 +245,158 @@ window.addEventListener('scroll', () => {
 function initContactForm() {
     const contactForm = document.getElementById('contactForm');
     
-    if (contactForm) {
-        contactForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const submitButton = contactForm.querySelector('.btn-submit');
-            const originalText = submitButton.innerHTML;
-            
-            // 獲取表單數據
-            const formData = new FormData(contactForm);
-            const name = formData.get('name');
-            const email = formData.get('email');
-            const message = formData.get('message');
-            
-            // 驗證表單
-            if (!name || !email || !message) {
-                alert('請填寫所有欄位');
-                return;
-            }
-            
-            // 顯示載入狀態
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span>送出中...</span>';
-            
-            try {
-                // 儲存到 localStorage
-                const messageData = {
-                    id: Date.now(),
-                    name: name.trim(),
-                    email: email.trim(),
-                    message: message.trim(),
-                    timestamp: new Date().toISOString(),
-                    read: false
-                };
-                
-                // 調試：檢查 localStorage 是否可用
-                console.log('當前頁面 origin:', window.location.origin);
-                console.log('localStorage 是否可用:', typeof(Storage) !== "undefined");
-                
-                let messages = [];
-                try {
-                    const existingData = localStorage.getItem('whisperMessages');
-                    console.log('讀取現有資料:', existingData);
-                    messages = JSON.parse(existingData || '[]');
-                } catch (error) {
-                    console.error('讀取現有訊息時發生錯誤:', error);
-                    messages = [];
-                }
-                
-                messages.unshift(messageData);
-                
-                try {
-                    localStorage.setItem('whisperMessages', JSON.stringify(messages));
-                    console.log('✓ 訊息已成功儲存到 localStorage');
-                    console.log('儲存的 key: whisperMessages');
-                    console.log('儲存的資料:', JSON.stringify(messages));
-                } catch (error) {
-                    console.error('儲存到 localStorage 時發生錯誤:', error);
-                    alert('儲存失敗：' + error.message);
-                    return;
-                }
-                
-                console.log('訊息已儲存:', messageData);
-                console.log('所有訊息:', messages);
-                console.log('訊息數量:', messages.length);
-                
-                // 顯示成功訊息
-                submitButton.innerHTML = '<span>✓ 已送出</span>';
-                submitButton.style.background = 'var(--gradient-secondary)';
-                
-                // 重置表單
-                contactForm.reset();
-                
-                // 3 秒後恢復按鈕
-                setTimeout(() => {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
-                    submitButton.style.background = '';
-                }, 3000);
-                
-            } catch (error) {
-                console.error('提交失敗:', error);
-                submitButton.innerHTML = '<span>✗ 送出失敗，請重試</span>';
-                submitButton.style.background = 'var(--accent)';
-                
-                setTimeout(() => {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
-                    submitButton.style.background = '';
-                }, 3000);
-            }
-        });
-        
-        console.log('表單已初始化');
-    } else {
-        console.log('找不到表單元素');
+    if (!contactForm) {
+        return; // 不是悄悄話頁面，直接返回
     }
+    
+    // 創建訊息提示區域
+    let messageAlert = document.getElementById('formMessageAlert');
+    if (!messageAlert) {
+        messageAlert = document.createElement('div');
+        messageAlert.id = 'formMessageAlert';
+        messageAlert.style.cssText = `
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        `;
+        contactForm.appendChild(messageAlert);
+    }
+    
+    function showMessage(text, type = 'success') {
+        messageAlert.textContent = text;
+        messageAlert.style.display = 'block';
+        if (type === 'success') {
+            messageAlert.style.background = 'rgba(16, 185, 129, 0.1)';
+            messageAlert.style.color = '#10B981';
+            messageAlert.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        } else {
+            messageAlert.style.background = 'rgba(239, 68, 68, 0.1)';
+            messageAlert.style.color = '#EF4444';
+            messageAlert.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        }
+    }
+    
+    function hideMessage() {
+        messageAlert.style.display = 'none';
+    }
+    
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMessage();
+        
+        const submitButton = contactForm.querySelector('.btn-submit');
+        const originalText = submitButton.innerHTML;
+        const originalBg = submitButton.style.background;
+        
+        // 獲取表單數據
+        const formData = new FormData(contactForm);
+        const name = formData.get('name')?.trim();
+        const email = formData.get('email')?.trim();
+        const message = formData.get('message')?.trim();
+        
+        // 驗證表單
+        if (!name || !email || !message) {
+            showMessage('請填寫所有欄位', 'error');
+            return;
+        }
+        
+        // 驗證 email 格式
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showMessage('請輸入有效的 Email 地址', 'error');
+            return;
+        }
+        
+        // 顯示載入狀態
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span>送出中...</span>';
+        
+        try {
+            // 檢查 localStorage 是否可用
+            if (typeof(Storage) === "undefined") {
+                throw new Error('瀏覽器不支援 localStorage');
+            }
+            
+            // 儲存到 localStorage
+            const messageData = {
+                id: Date.now() + Math.random(), // 確保唯一 ID
+                name: name,
+                email: email,
+                message: message,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+            
+            // 讀取現有訊息
+            let messages = [];
+            try {
+                const existingData = localStorage.getItem('whisperMessages');
+                if (existingData) {
+                    messages = JSON.parse(existingData);
+                    // 確保是陣列
+                    if (!Array.isArray(messages)) {
+                        messages = [];
+                    }
+                }
+            } catch (error) {
+                console.warn('讀取現有訊息時發生錯誤，將使用空陣列:', error);
+                messages = [];
+            }
+            
+            // 添加新訊息到開頭
+            messages.unshift(messageData);
+            
+            // 限制訊息數量（最多保留 1000 條）
+            if (messages.length > 1000) {
+                messages = messages.slice(0, 1000);
+            }
+            
+            // 儲存到 localStorage
+            try {
+                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+            } catch (error) {
+                // 如果儲存失敗（可能是空間不足），嘗試清理舊訊息
+                if (error.name === 'QuotaExceededError') {
+                    // 只保留最新的 100 條
+                    messages = messages.slice(0, 100);
+                    localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                } else {
+                    throw error;
+                }
+            }
+            
+            // 顯示成功訊息
+            showMessage('✓ 訊息已成功送出！', 'success');
+            submitButton.innerHTML = '<span>✓ 已送出</span>';
+            submitButton.style.background = 'var(--gradient-secondary)';
+            
+            // 重置表單
+            contactForm.reset();
+            
+            // 3 秒後恢復按鈕
+            setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                submitButton.style.background = originalBg;
+                hideMessage();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('提交失敗:', error);
+            showMessage('✗ 送出失敗：' + (error.message || '請稍後再試'), 'error');
+            submitButton.innerHTML = '<span>✗ 送出失敗</span>';
+            submitButton.style.background = 'var(--accent)';
+            
+            setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                submitButton.style.background = originalBg;
+            }, 3000);
+        }
+    });
 }
 
 // 確保在 DOM 載入後執行
