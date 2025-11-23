@@ -315,74 +315,101 @@ function initContactForm() {
         submitButton.innerHTML = '<span>送出中...</span>';
         
         try {
-            // 檢查 localStorage 是否可用
-            if (typeof(Storage) === "undefined") {
-                throw new Error('瀏覽器不支援 localStorage');
-            }
+            // 使用 GitHub Issues API 創建 Issue
+            // 需要設置後端 API 端點（見 api/create-issue.js）
+            // 設置步驟：
+            // 1. 部署 api/create-issue.js 到 Vercel/Netlify
+            // 2. 設置環境變數 GITHUB_TOKEN
+            // 3. 將下面的 API_ENDPOINT 替換為你的 API URL
             
-            // 儲存到 localStorage
-            const messageData = {
-                id: Date.now() + Math.random(), // 確保唯一 ID
-                name: name,
-                email: email,
-                message: message,
-                timestamp: new Date().toISOString(),
-                read: false
-            };
+            const API_ENDPOINT = 'YOUR_API_URL/api/create-issue'; // 替換為實際的 API URL
             
-            // 讀取現有訊息
-            let messages = [];
-            try {
-                const existingData = localStorage.getItem('whisperMessages');
-                if (existingData) {
-                    messages = JSON.parse(existingData);
-                    // 確保是陣列
-                    if (!Array.isArray(messages)) {
-                        messages = [];
-                    }
-                }
-            } catch (error) {
-                console.warn('讀取現有訊息時發生錯誤，將使用空陣列:', error);
-                messages = [];
-            }
+            // 檢查是否已設置 API
+            const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
             
-            // 添加新訊息到開頭
-            messages.unshift(messageData);
-            
-            // 限制訊息數量（最多保留 1000 條）
-            if (messages.length > 1000) {
-                messages = messages.slice(0, 1000);
-            }
-            
-            // 儲存到 localStorage
-            try {
-                localStorage.setItem('whisperMessages', JSON.stringify(messages));
-            } catch (error) {
-                // 如果儲存失敗（可能是空間不足），嘗試清理舊訊息
-                if (error.name === 'QuotaExceededError') {
-                    // 只保留最新的 100 條
-                    messages = messages.slice(0, 100);
-                    localStorage.setItem('whisperMessages', JSON.stringify(messages));
+            if (useAPI) {
+                // 使用 GitHub Issues API（通過後端代理）
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // 顯示成功訊息
+                    showMessage('✓ 訊息已成功送出！', 'success');
+                    submitButton.innerHTML = '<span>✓ 已送出</span>';
+                    submitButton.style.background = 'var(--gradient-secondary)';
+                    
+                    // 重置表單
+                    contactForm.reset();
+                    
+                    // 3 秒後恢復按鈕
+                    setTimeout(() => {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                        submitButton.style.background = originalBg;
+                        hideMessage();
+                    }, 3000);
+                    return;
                 } else {
-                    throw error;
+                    throw new Error(data.error || '提交失敗');
                 }
+            } else {
+                // 備用方案：使用 localStorage（僅用於開發測試）
+                console.warn('⚠️ API 端點未設置，使用 localStorage 作為備用方案');
+                console.warn('⚠️ 請設置 API 端點以接收來自世界各地的訊息');
+                
+                const messageData = {
+                    id: Date.now() + Math.random(),
+                    name: name,
+                    email: email,
+                    message: message,
+                    timestamp: new Date().toISOString(),
+                    read: false
+                };
+                
+                let messages = [];
+                try {
+                    const existingData = localStorage.getItem('whisperMessages');
+                    if (existingData) {
+                        messages = JSON.parse(existingData);
+                        if (!Array.isArray(messages)) {
+                            messages = [];
+                        }
+                    }
+                } catch (error) {
+                    messages = [];
+                }
+                
+                messages.unshift(messageData);
+                if (messages.length > 1000) {
+                    messages = messages.slice(0, 1000);
+                }
+                
+                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                
+                showMessage('✓ 訊息已送出（本地測試模式）。請設置 API 端點以接收來自世界各地的訊息。', 'success');
+                submitButton.innerHTML = '<span>✓ 已送出</span>';
+                submitButton.style.background = 'var(--gradient-secondary)';
+                
+                contactForm.reset();
+                
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                    submitButton.style.background = originalBg;
+                    hideMessage();
+                }, 5000);
             }
-            
-            // 顯示成功訊息
-            showMessage('✓ 訊息已成功送出！', 'success');
-            submitButton.innerHTML = '<span>✓ 已送出</span>';
-            submitButton.style.background = 'var(--gradient-secondary)';
-            
-            // 重置表單
-            contactForm.reset();
-            
-            // 3 秒後恢復按鈕
-            setTimeout(() => {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalText;
-                submitButton.style.background = originalBg;
-                hideMessage();
-            }, 3000);
             
         } catch (error) {
             console.error('提交失敗:', error);

@@ -924,45 +924,84 @@
         }
         
         // 載入訊息
-        function loadMessages() {
-            // 檢查 localStorage 是否可用
-            if (typeof(Storage) === "undefined") {
-                const messagesList = document.getElementById('messagesList');
-                if (messagesList) {
-                    messagesList.innerHTML = `
+        async function loadMessages() {
+            const messagesListEl = document.getElementById('messagesList');
+            if (!messagesListEl) {
+                console.error('找不到 messagesList 元素');
+                return;
+            }
+            
+            // 顯示載入狀態
+            messagesListEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <div class="empty-state-text">載入中...</div>
+                </div>
+            `;
+            
+            // 使用 GitHub Issues API（通過後端代理）
+            // 設置步驟：
+            // 1. 部署 api/get-issues.js 到 Vercel/Netlify
+            // 2. 將下面的 API_ENDPOINT 替換為你的 API URL
+            
+            const API_ENDPOINT = 'YOUR_API_URL/api/get-issues'; // 替換為實際的 API URL
+            const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+            
+            let messages = [];
+            
+            if (useAPI) {
+                try {
+                    // 從 GitHub Issues API 讀取
+                    const response = await fetch(API_ENDPOINT);
+                    const data = await response.json();
+                    
+                    if (data.success && data.messages) {
+                        messages = data.messages;
+                        console.log('從 GitHub Issues 載入訊息數量:', messages.length);
+                    } else {
+                        throw new Error(data.error || '讀取失敗');
+                    }
+                } catch (error) {
+                    console.error('從 API 讀取訊息失敗:', error);
+                    messagesListEl.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-text">無法載入訊息</div>
+                            <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-light);">
+                                錯誤：${error.message}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+            } else {
+                // 備用方案：從 localStorage 讀取（僅用於開發測試）
+                console.warn('⚠️ API 端點未設置，使用 localStorage 作為備用方案');
+                
+                if (typeof(Storage) === "undefined") {
+                    messagesListEl.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">⚠️</div>
                             <div class="empty-state-text">瀏覽器不支援 localStorage</div>
                         </div>
                     `;
+                    return;
                 }
-                return;
-            }
-            
-            const rawData = localStorage.getItem('whisperMessages');
-            let messages = [];
-            
-            if (rawData) {
-                try {
-                    messages = JSON.parse(rawData);
-                    // 確保是陣列
-                    if (!Array.isArray(messages)) {
-                        console.warn('訊息資料格式不正確，重置為空陣列');
+                
+                const rawData = localStorage.getItem('whisperMessages');
+                if (rawData) {
+                    try {
+                        messages = JSON.parse(rawData);
+                        if (!Array.isArray(messages)) {
+                            messages = [];
+                        }
+                    } catch (error) {
+                        console.error('解析訊息時發生錯誤:', error);
                         messages = [];
-                        localStorage.setItem('whisperMessages', '[]');
                     }
-                } catch (error) {
-                    console.error('解析訊息時發生錯誤:', error);
-                    messages = [];
                 }
-            }
-            
-            console.log('載入訊息數量:', messages.length);
-            
-            const messagesList = document.getElementById('messagesList');
-            if (!messagesList) {
-                console.error('找不到 messagesList 元素');
-                return;
+                
+                console.log('從 localStorage 載入訊息數量:', messages.length);
             }
             
             // 更新統計
@@ -979,10 +1018,10 @@
             if (readEl) readEl.textContent = read;
             
             // 清空列表
-            messagesList.innerHTML = '';
+            messagesListEl.innerHTML = '';
             
             if (messages.length === 0) {
-                messagesList.innerHTML = `
+                messagesListEl.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">📭</div>
                         <div class="empty-state-text">目前還沒有任何訊息</div>
@@ -995,53 +1034,82 @@
             }
             
             // 顯示訊息
-            messages.forEach(message => {
+            messages.forEach((message) => {
+                // 確保訊息有必要的欄位
+                if (!message.id || !message.name || !message.message) {
+                    console.warn('訊息資料不完整，跳過:', message);
+                    return;
+                }
+                
                 const messageItem = document.createElement('div');
                 messageItem.className = `message-item ${message.read ? '' : 'unread'}`;
                 messageItem.id = `message-${message.id}`;
                 
-                const date = new Date(message.timestamp);
-                const formattedDate = date.toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                // 格式化日期
+                let formattedDate = '未知時間';
+                try {
+                    const date = new Date(message.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        formattedDate = date.toLocaleString('zh-TW', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                } catch (e) {
+                    console.warn('日期格式化失敗:', e);
+                }
+                
+                // 如果有 Issue URL，添加連結
+                const issueLink = message.issueUrl ? 
+                    `<a href="${message.issueUrl}" target="_blank" style="color: var(--primary); text-decoration: none; margin-left: 0.5rem;">#${message.issueNumber}</a>` : 
+                    '';
                 
                 messageItem.innerHTML = `
                     <div class="message-header">
                         <div class="message-info">
-                            <div class="message-name">${escapeHtml(message.name)}</div>
-                            <div class="message-email">${escapeHtml(message.email)}</div>
+                            <div class="message-name">${escapeHtml(message.name || '未提供')}${issueLink}</div>
+                            <div class="message-email">${escapeHtml(message.email || '未提供')}</div>
                         </div>
                         <div class="message-time">${formattedDate}</div>
                     </div>
-                    <div class="message-content">${escapeHtml(message.message)}</div>
+                    <div class="message-content">${escapeHtml(message.message || '')}</div>
                     <div class="message-actions">
                         ${!message.read ? `<button class="btn-action btn-mark-read" onclick="markAsRead(${message.id})">標記為已讀</button>` : ''}
                         <button class="btn-action btn-delete" onclick="deleteMessage(${message.id})">刪除</button>
+                        ${message.issueUrl ? `<a href="${message.issueUrl}" target="_blank" class="btn-action" style="background: var(--bg-section); color: var(--text-primary); text-decoration: none; display: inline-block;">在 GitHub 查看</a>` : ''}
                     </div>
                 `;
                 
-                messagesList.appendChild(messageItem);
+                messagesListEl.appendChild(messageItem);
             });
         }
         
-        // 標記為已讀
-        function markAsRead(id) {
+        // 標記為已讀（關閉 GitHub Issue）
+        async function markAsRead(id) {
             try {
+                // 如果使用 GitHub Issues，這裡可以調用 API 關閉 Issue
+                // 目前先使用 localStorage 作為備用
                 const rawData = localStorage.getItem('whisperMessages');
-                if (!rawData) return;
+                if (rawData) {
+                    let messages = JSON.parse(rawData);
+                    if (Array.isArray(messages)) {
+                        const message = messages.find(m => m.id === id);
+                        if (message) {
+                            message.read = true;
+                            localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                        }
+                    }
+                }
                 
-                let messages = JSON.parse(rawData);
-                if (!Array.isArray(messages)) return;
+                // 重新載入訊息
+                loadMessages();
                 
-                const message = messages.find(m => m.id === id);
-                if (message) {
-                    message.read = true;
-                    localStorage.setItem('whisperMessages', JSON.stringify(messages));
-                    loadMessages();
+                // 提示：如果使用 GitHub Issues，可以在 GitHub 上直接關閉 Issue
+                if (typeof id === 'number' && id > 0) {
+                    console.log(`提示：可以在 GitHub 上關閉 Issue #${id}`);
                 }
             } catch (error) {
                 console.error('標記為已讀時發生錯誤:', error);
@@ -1056,15 +1124,24 @@
             }
             
             try {
+                // 如果使用 GitHub Issues，這裡可以調用 API 刪除 Issue
+                // 目前先使用 localStorage 作為備用
                 const rawData = localStorage.getItem('whisperMessages');
-                if (!rawData) return;
+                if (rawData) {
+                    let messages = JSON.parse(rawData);
+                    if (Array.isArray(messages)) {
+                        messages = messages.filter(m => m.id !== id);
+                        localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                    }
+                }
                 
-                let messages = JSON.parse(rawData);
-                if (!Array.isArray(messages)) return;
-                
-                messages = messages.filter(m => m.id !== id);
-                localStorage.setItem('whisperMessages', JSON.stringify(messages));
+                // 重新載入訊息
                 loadMessages();
+                
+                // 提示：如果使用 GitHub Issues，可以在 GitHub 上直接刪除 Issue
+                if (typeof id === 'number' && id > 0) {
+                    console.log(`提示：可以在 GitHub 上刪除 Issue #${id}`);
+                }
             } catch (error) {
                 console.error('刪除訊息時發生錯誤:', error);
                 alert('刪除失敗，請重試');
