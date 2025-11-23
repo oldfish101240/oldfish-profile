@@ -63,18 +63,24 @@
             const isInternalHtml = originalHref.endsWith('.html') || 
                                    originalHref.includes('.html');
             
+            // 處理絕對路徑（GitHub Pages）或相對路徑的 HTML 連結
             if (isInternalHtml && 
-                !originalHref.startsWith('http') && 
                 !originalHref.startsWith('#') && 
                 !originalHref.startsWith('mailto:') && 
                 !originalHref.startsWith('tel:')) {
                 
                 try {
-                    // 使用完整的 URL 解析
-                    const url = new URL(originalHref, window.location.origin);
-                    // 更新或添加主題參數
-                    url.searchParams.set('theme', currentTheme);
-                    link.href = url.toString();
+                    // 如果是絕對路徑（以 http 或 https 開頭）
+                    if (originalHref.startsWith('http://') || originalHref.startsWith('https://')) {
+                        const url = new URL(originalHref);
+                        url.searchParams.set('theme', currentTheme);
+                        link.href = url.toString();
+                    } else {
+                        // 相對路徑，使用當前 origin
+                        const url = new URL(originalHref, window.location.origin);
+                        url.searchParams.set('theme', currentTheme);
+                        link.href = url.toString();
+                    }
                 } catch (e) {
                     // 如果 URL 解析失敗，使用簡單拼接
                     const separator = originalHref.includes('?') ? '&' : '?';
