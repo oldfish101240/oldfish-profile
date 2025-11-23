@@ -322,7 +322,7 @@ function initContactForm() {
             // 2. 設置環境變數 GITHUB_TOKEN
             // 3. 將下面的 API_ENDPOINT 替換為你的 API URL
             
-            const API_ENDPOINT = 'YOUR_API_URL/api/create-issue'; // 替換為實際的 API URL
+            const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/create-issue'; // 替換為實際的 API URL
             
             // 檢查是否已設置 API
             const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
