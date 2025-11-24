@@ -24,9 +24,9 @@ export default async function handler(req, res) {
     }
     
     try {
-        const { name, email, message } = req.body;
+        const { name, message } = req.body;
         
-        if (!name || !email || !message) {
+        if (!name || !message) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         
@@ -43,7 +43,6 @@ export default async function handler(req, res) {
         const issueBody = `## 悄悄話訊息
 
 **姓名：** ${name}
-**Email：** ${email}
 **時間：** ${new Date().toLocaleString('zh-TW')}
 
 ---

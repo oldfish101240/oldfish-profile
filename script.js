@@ -294,19 +294,11 @@ function initContactForm() {
         // 獲取表單數據
         const formData = new FormData(contactForm);
         const name = formData.get('name')?.trim();
-        const email = formData.get('email')?.trim();
         const message = formData.get('message')?.trim();
         
         // 驗證表單
-        if (!name || !email || !message) {
+        if (!name || !message) {
             showMessage('請填寫所有欄位', 'error');
-            return;
-        }
-        
-        // 驗證 email 格式
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            showMessage('請輸入有效的 Email 地址', 'error');
             return;
         }
         
@@ -336,7 +328,6 @@ function initContactForm() {
                     },
                     body: JSON.stringify({
                         name: name,
-                        email: email,
                         message: message
                     })
                 });
@@ -371,7 +362,6 @@ function initContactForm() {
                 const messageData = {
                     id: Date.now() + Math.random(),
                     name: name,
-                    email: email,
                     message: message,
                     timestamp: new Date().toISOString(),
                     read: false

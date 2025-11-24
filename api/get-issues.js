@@ -52,13 +52,11 @@ export default async function handler(req, res) {
             // 從 Issue body 中解析訊息
             const body = issue.body || '';
             const nameMatch = body.match(/\*\*姓名：\*\* (.+)/);
-            const emailMatch = body.match(/\*\*Email：\*\* (.+)/);
             const messageMatch = body.match(/\*\*訊息內容：\*\*\s*\n\n(.+?)\n\n---/s);
             
             return {
                 id: issue.number,
                 name: nameMatch ? nameMatch[1].trim() : '未知',
-                email: emailMatch ? emailMatch[1].trim() : '未知',
                 message: messageMatch ? messageMatch[1].trim() : issue.body,
                 timestamp: issue.created_at,
                 read: issue.state === 'closed',

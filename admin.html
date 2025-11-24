@@ -148,11 +148,6 @@
             margin-bottom: 0.25rem;
         }
         
-        .message-email {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-        
         .message-time {
             color: var(--text-light);
             font-size: 0.85rem;
@@ -1071,7 +1066,6 @@
                     <div class="message-header">
                         <div class="message-info">
                             <div class="message-name">${escapeHtml(message.name || '未提供')}${issueLink}</div>
-                            <div class="message-email">${escapeHtml(message.email || '未提供')}</div>
                         </div>
                         <div class="message-time">${formattedDate}</div>
                     </div>
