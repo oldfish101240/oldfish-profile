@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         }
         
         const repoOwner = 'oldfish101240';
-        const repoName = 'oldfish-profile';
+        const repoName = 'whisper-box'; //悄悄話專用 repo 名稱
         const githubToken = process.env.GITHUB_TOKEN;
         
         if (!githubToken) {
