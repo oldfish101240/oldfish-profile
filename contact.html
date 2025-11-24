@@ -40,59 +40,57 @@
         <div class="floating-shape shape-2"></div>
         <div class="floating-shape shape-3"></div>
     </div>
+    <div class="page-glass-bg"></div>
 
-    <!-- 導航列 -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <a href="https://oldfish101240.github.io/oldfish-profile/index.html" style="text-decoration: none; color: inherit;">
-                    <span class="logo-text">老魚oldfish</span>
-                </a>
-            </div>
+    <main class="page-content">
+        <!-- 導航列 -->
+        <nav class="navbar" id="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="https://oldfish101240.github.io/oldfish-profile/index.html" style="text-decoration: none; color: inherit;">
+                        <span class="logo-text">老魚oldfish</span>
+                    </a>
+                </div>
             <div class="nav-actions">
                 <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
-                    <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M10 2V4M10 16V18M18 10H16M4 10H2M15.657 4.343L14.243 5.757M5.757 14.243L4.343 15.657M15.657 15.657L14.243 14.243M5.757 5.757L4.343 4.343" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
-                    <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M17.293 13.293C16.3785 14.2075 15.2354 14.8641 13.9959 15.2049C12.7564 15.5457 11.4578 15.5608 10.2106 15.2484C8.96335 14.936 7.80909 14.3046 6.87063 13.4161C5.93217 12.5276 5.24026 11.4127 4.86129 10.1801C4.48233 8.94756 4.42894 7.63681 4.70654 6.37518C4.98414 5.11355 5.58338 3.93846 6.44998 3.07187C7.31657 2.20527 8.49166 1.60604 9.75329 1.32844C11.0149 1.05084 12.3257 1.10423 13.5582 1.48319C14.7908 1.86215 15.9057 2.55407 16.7942 3.49253C17.6827 4.43099 18.3141 5.58525 18.6265 6.83246C18.9389 8.07967 18.9238 9.37828 18.583 10.6178C18.2422 11.8573 17.5856 13.0004 16.671 13.915L17.293 13.293Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="assets/light-b.png" alt="切換為亮色主題" class="theme-icon theme-icon-sun">
+                    <img src="assets/dark-w.png" alt="切換為暗色主題" class="theme-icon theme-icon-moon">
                 </button>
             </div>
-        </div>
-    </nav>
+            </div>
+        </nav>
 
-    <!-- 悄悄話區塊 -->
-    <section class="section section-contact">
-        <div class="container">
-            <div class="contact-header">
-                <h2 class="contact-title">悄悄話</h2>
-                <p class="contact-subtitle">有什麼想說的，就寫下來吧</p>
+        <!-- 悄悄話區塊 -->
+        <section class="section section-contact">
+            <div class="container">
+                <div class="contact-header">
+                    <h2 class="contact-title">悄悄話</h2>
+                    <p class="contact-subtitle">有什麼想說的，就寫下來吧</p>
+                </div>
+                
+                <div class="contact-content">
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="name">你的名字</label>
+                            <input type="text" id="name" name="name" placeholder="怎麼稱呼你呢？" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message">想說的話</label>
+                            <textarea id="message" name="message" rows="6" placeholder="在這裡寫下你想說的話..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-submit">
+                            <span>送出</span>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 10L17 10M17 10L12 5M17 10L12 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
             </div>
-            
-            <div class="contact-content">
-                <form class="contact-form" id="contactForm">
-                    <div class="form-group">
-                        <label for="name">你的名字</label>
-                        <input type="text" id="name" name="name" placeholder="怎麼稱呼你呢？" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="message">想說的話</label>
-                        <textarea id="message" name="message" rows="6" placeholder="在這裡寫下你想說的話..." required></textarea>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-submit">
-                        <span>送出</span>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <path d="M3 10L17 10M17 10L12 5M17 10L12 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <!-- 頁尾 -->
     <footer class="footer">

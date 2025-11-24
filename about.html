@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="老魚 oldfish - 關於我">
+    <title>關於我 - 老魚 oldfish</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlTheme = urlParams.get('theme');
+            let theme = 'dark';
+
+            if (urlTheme === 'dark' || urlTheme === 'light') {
+                theme = urlTheme;
+                localStorage.setItem('theme', theme);
+            } else {
+                theme = localStorage.getItem('theme') || 'dark';
+            }
+            
+            document.documentElement.setAttribute('data-theme', theme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', theme);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="bg-decoration">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+    <div class="page-glass-bg"></div>
+
+    <main class="page-content">
+        <nav class="navbar" id="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="https://oldfish101240.github.io/oldfish-profile/index.html" style="text-decoration: none; color: inherit;">
+                        <span class="logo-text">老魚oldfish</span>
+                    </a>
+                </div>
+                <div class="nav-actions">
+                    <a href="https://oldfish101240.github.io/oldfish-profile/index.html" class="nav-link">首頁</a>
+                    <a href="https://oldfish101240.github.io/oldfish-profile/contact.html" class="nav-link">悄悄話</a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
+                        <img src="assets/light-b.png" alt="切換為亮色主題" class="theme-icon theme-icon-sun">
+                        <img src="assets/dark-w.png" alt="切換為暗色主題" class="theme-icon theme-icon-moon">
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <section class="section section-contact" style="padding-top: 7rem;">
+            <div class="container">
+                <div class="contact-header">
+                    <h2 class="contact-title">關於我</h2>
+                    <p class="contact-subtitle">尋找生活的美好，用好奇心探索世界</p>
+                </div>
+
+                <div class="about-hero">
+                    <div class="hero-left">
+                        <div class="hero-avatar-wrapper">
+                            <div class="hero-avatar-container avatar-small">
+                                <div class="avatar-glow"></div>
+                                <img src="https://oldfish101240.github.io/oldfish-profile/assets/fish.jpg" alt="老魚 oldfish" class="hero-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="avatar-fallback" style="display: none;">
+                                    <span>🐟</span>
+                                </div>
+                                <div class="avatar-ripple ripple-1"></div>
+                                <div class="avatar-ripple ripple-2"></div>
+                                <div class="avatar-ripple ripple-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-text-wrapper">
+                        <h1 class="hero-name">老魚<span class="hero-name-en">oldfish</span></h1>
+                        <p class="hero-tagline">「做自己喜歡的事，不一定專業，但一定用心。」</p>
+                    </div>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-card">
+                        <h3>我在做什麼</h3>
+                        <p>白天專注於做好一個學生，放學後則開始發掘屬於自己的資訊科技小宇宙。</p>
+                        <ul>
+                            <li>- 學習電腦與作業系統的奧秘</li>
+                            <li>- 把自己的發想實作</li>
+                        </ul>
+                    </div>
+
+                    <div class="about-card">
+                        <h3>旅程筆記</h3>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <span class="timeline-year">2025</span>
+                                <p>打上人生第一行代碼，開啟寫程式的冒險。</p>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-year">2021</span>
+                                <p>擁有了第一台屬於自己的電腦，開始<del>亂玩</del>與拆解。</p>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-year">2019</span>
+                                <p>第一次接觸電腦，感到濃厚興趣。正式開始探索科技領域。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-grid">
+                <div class="about-card">
+                    <h3>(不專業)技能</h3>
+                    <p>還在摸索，但已經愛上：</p>
+                    <div class="skills-icon-row">
+                        <div class="skill-icon-dual">
+                            <img src="assets/python-w.png" alt="Python icon" class="skill-icon-img icon-dark">
+                            <img src="assets/python-b.png" alt="Python icon" class="skill-icon-img icon-light">
+                        </div>
+                        <div class="skill-icon-dual">
+                            <img src="assets/html-w.png" alt="HTML icon" class="skill-icon-img icon-dark">
+                            <img src="assets/html-b.png" alt="HTML icon" class="skill-icon-img icon-light">
+                        </div>
+                        <div class="skill-icon-dual">
+                            <img src="assets/css-w.png" alt="CSS icon" class="skill-icon-img icon-dark">
+                            <img src="assets/css-b.png" alt="CSS icon" class="skill-icon-img icon-light">
+                        </div>
+                    </div>
+                </div>
+                <div class="about-card">
+                    <h3>「老魚」這個暱稱的由來</h3>
+                    <p>因為我姓余，所以被同學叫「老余」。後來經過修改就叫做「老魚」了~
+                </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 老魚 oldfish.</p>
+                <p class="footer-note">(本頁面由cursor輔助製作)</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
