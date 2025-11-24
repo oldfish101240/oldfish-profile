@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     
     try {
         const repoOwner = 'oldfish101240';
-        const repoName = 'oldfish-profile';
+        const repoName = 'whisper-box';
         const githubToken = process.env.GITHUB_TOKEN;
         
         // 讀取 GitHub Issues（公開的，不需要 token，但使用 token 可以獲取更多資訊）
