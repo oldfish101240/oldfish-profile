@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="老魚 oldfish - 作品集">
+    <title>作品集 - 老魚 oldfish</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlTheme = urlParams.get('theme');
+            let theme = 'dark';
+
+            if (urlTheme === 'dark' || urlTheme === 'light') {
+                theme = urlTheme;
+                localStorage.setItem('theme', theme);
+            } else {
+                theme = localStorage.getItem('theme') || 'dark';
+            }
+            
+            document.documentElement.setAttribute('data-theme', theme);
+            if (document.body) {
+                document.body.setAttribute('data-theme', theme);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="bg-decoration">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+    <div class="page-glass-bg"></div>
+
+    <main class="page-content">
+        <nav class="navbar" id="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <a href="https://oldfish101240.github.io/oldfish-profile/index.html" style="text-decoration: none; color: inherit;">
+                        <span class="logo-text">老魚oldfish</span>
+                    </a>
+                </div>
+                <div class="nav-actions">
+                    <a href="https://oldfish101240.github.io/oldfish-profile/index.html" class="nav-link">首頁</a>
+                    <a href="https://oldfish101240.github.io/oldfish-profile/about.html" class="nav-link">關於我</a>
+                    <a href="https://oldfish101240.github.io/oldfish-profile/contact.html" class="nav-link">悄悄話</a>
+                    <button class="theme-toggle" id="themeToggle" aria-label="切換主題">
+                        <img src="assets/light-b.png" alt="切換為亮色主題" class="theme-icon theme-icon-sun">
+                        <img src="assets/dark-w.png" alt="切換為暗色主題" class="theme-icon theme-icon-moon">
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <section class="section section-contact" style="padding-top: 7rem;">
+            <div class="container">
+                <div class="contact-header">
+                    <h2 class="contact-title">作品集</h2>
+                    <p class="contact-subtitle">由老魚用❤️製作</p>
+                </div>
+
+                <div class="portfolio-grid">
+                    <div class="portfolio-item">
+                        <div class="portfolio-image">
+                            <div class="image-placeholder-small">
+                                <img src="assets/oldfish-downloader.png" alt="oldfish 影片下載器截圖" class="portfolio-thumb">
+                                <div class="portfolio-overlay">01</div>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <div class="portfolio-meta">
+                                <span class="portfolio-category">桌面應用</span>
+                                <span class="portfolio-year">2025</span>
+                            </div>
+                            <h3>oldfish 影片下載器</h3>
+                            <p>一個可以下載 YouTube 影片/短片/音軌的工具。</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">Python</span>
+                                <span class="tag">HTML</span>
+                                <span class="tag">GUI</span>
+                            </div>
+                            <a href="https://github.com/oldfish101240/oldfish-Video-Downloader" target="_blank" class="portfolio-link">
+                                查看專案
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="portfolio-item">
+                        <div class="portfolio-image">
+                            <div class="image-placeholder-small">
+                                <img src="assets/fish.jpg" alt="老魚oldfish個人網站截圖" class="portfolio-thumb">
+                                <div class="portfolio-overlay">02</div>
+                            </div>
+                        </div>
+                        <div class="portfolio-content">
+                            <div class="portfolio-meta">
+                                <span class="portfolio-category">個人網站</span>
+                                <span class="portfolio-year">2025</span>
+                            </div>
+                            <h3>老魚oldfish 個人網站</h3>
+                            <p>採用 GitHub Pages 建置個人網站，且具備悄悄話留言功能。</p>
+                            <div class="portfolio-tags">
+                                <span class="tag">HTML</span>
+                                <span class="tag">JavaScript</span>
+                            </div>
+                            <a href="https://github.com/oldfish101240/oldfish-profile" target="_blank" class="portfolio-link">
+                                查看專案
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14"></path>
+                                    <path d="M12 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 老魚 oldfish.</p>
+                <p class="footer-note">(本頁面由cursor輔助製作)</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
