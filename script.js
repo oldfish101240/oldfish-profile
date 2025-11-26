@@ -309,7 +309,7 @@ function initLogoClickEasterEgg() {
                 // Logo 彩蛋：提示在 Logo 右下方一點，避免貼到邊界
                 showToast(
                     '恭喜你發現了小彩蛋!<br>(但好像沒什麼意義就是了...)',
-                    { anchor: logo, placement: 'bottom', offsetX: 28, offsetY: 20 }
+                    { anchor: logo, placement: 'bottom', offsetX: 53, offsetY: 20 }
                 );
                 sessionStorage.setItem(STORAGE_KEY, 0);
             }
