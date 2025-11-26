@@ -240,6 +240,117 @@ window.addEventListener('scroll', () => {
 });
 
 // ============================================
+// 小彩蛋：Logo 點擊、年份資訊、自訂提示
+// ============================================
+function createToastContainer() {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, options = {}) {
+    const {
+        anchor = null,
+        placement = 'bottom',
+        offsetX = 0,
+        offsetY = 0
+    } = options;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = message.replace(/\n/g, '<br>');
+    
+    if (anchor) {
+        toast.classList.add('toast-floating');
+        document.body.appendChild(toast);
+        
+        const rect = anchor.getBoundingClientRect();
+        const baseX = window.scrollX + rect.left + rect.width / 2;
+        const baseY = placement === 'top'
+            ? window.scrollY + rect.top - 10   // 基本往上顯示
+            : window.scrollY + rect.bottom + 8; // 基本往下顯示
+        const x = baseX + offsetX;
+        const y = baseY + offsetY;
+        toast.style.setProperty('--toast-left', `${x}px`);
+        toast.style.setProperty('--toast-top', `${y}px`);
+    } else {
+        const container = createToastContainer();
+        toast.classList.add('toast-center');
+        container.appendChild(toast);
+    }
+    
+    requestAnimationFrame(() => {
+        toast.classList.add('visible');
+    });
+    
+    setTimeout(() => {
+        toast.classList.add('hide');
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    }, 3200);
+}
+
+function initLogoClickEasterEgg() {
+    const logos = document.querySelectorAll('.logo-text');
+    if (!logos.length) {
+        return;
+    }
+    
+    const STORAGE_KEY = 'logoClickCount';
+    
+    logos.forEach(logo => {
+        logo.addEventListener('click', () => {
+            const currentCount = Number(sessionStorage.getItem(STORAGE_KEY) || 0) + 1;
+            sessionStorage.setItem(STORAGE_KEY, currentCount);
+            
+            if (currentCount >= 10) {
+                // Logo 彩蛋：提示在 Logo 右下方一點，避免貼到邊界
+                showToast(
+                    '恭喜你發現了小彩蛋!<br>(但好像沒什麼意義就是了...)',
+                    { anchor: logo, placement: 'bottom', offsetX: 28, offsetY: 20 }
+                );
+                sessionStorage.setItem(STORAGE_KEY, 0);
+            }
+        });
+    });
+}
+
+function initYearInfoEasterEgg() {
+    const yearButtons = document.querySelectorAll('.year-trigger');
+    if (!yearButtons.length) {
+        return;
+    }
+    
+    const VISIT_KEY = 'oldfishVisitCount';
+    const visitCount = Number(localStorage.getItem(VISIT_KEY) || 0) + 1;
+    localStorage.setItem(VISIT_KEY, visitCount);
+    
+    yearButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const launchDate = button.dataset.launch || '2025-01-01';
+            // 年份彩蛋：從按鈕「更上方」彈出一點，避免太貼近按鈕
+            showToast(
+                `本站建立於 ${launchDate}<br>這是你第 ${visitCount} 次拜訪`,
+                { anchor: button, placement: 'top', offsetY: -70 }
+            );
+        });
+    });
+}
+
+function initEasterEggs() {
+    initLogoClickEasterEgg();
+    initYearInfoEasterEgg();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEasterEggs);
+} else {
+    initEasterEggs();
+}
+
+// ============================================
 // 悄悄話表單提交
 // ============================================
 function initContactForm() {
