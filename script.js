@@ -540,6 +540,34 @@ function initContactForm() {
                 filterResult.matches.forEach(match => {
                     ContentFilter.recordBlock(match.category || 'general');
                 });
+
+                // 記錄被攔截的內容（供 admin 查看）
+                if (typeof ContentFilter.logBlockedContent === 'function') {
+                    ContentFilter.logBlockedContent({
+                        page: window.location.pathname,
+                        name,
+                        message,
+                        matches: filterResult.matches
+                    });
+                }
+
+                // 同步送到後端（全站攔截紀錄）
+                try {
+                    const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/log-blocked';
+                    const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+                    if (useAPI) {
+                        fetch(API_ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                path: window.location.pathname,
+                                name,
+                                message,
+                                matches: filterResult.matches
+                            })
+                        }).catch(() => {});
+                    }
+                } catch (e) {}
                 
                 // 顯示過濾提醒視窗
                 showFilterAlertModal(filterResult.matches);

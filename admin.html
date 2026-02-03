@@ -620,6 +620,111 @@
                 gap: 1rem;
             }
         }
+
+        /* 過濾器：攔截內容區塊 */
+        .blocked-logs {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        .blocked-logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .blocked-logs-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .blocked-log-item {
+            background: var(--bg-section);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+        .blocked-log-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        .blocked-log-meta .left {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .blocked-log-meta .right {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+        .blocked-log-tags {
+            margin-bottom: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .blocked-tag {
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+        }
+        .blocked-log-content details {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+        .blocked-log-content summary {
+            cursor: pointer;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .blocked-log-content pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 0.75rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* 右下角 FAB */
+        .admin-fab {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+            width: 52px;
+            height: 52px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            font-size: 22px;
+            font-weight: 900;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .admin-fab:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-xl);
+        }
+        .admin-fab:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -785,6 +890,18 @@
                         <div class="filters-list" id="filtersList">
                             <!-- 過濾詞列表將在這裡動態載入 -->
                         </div>
+
+                        <!-- 最近攔截內容 -->
+                        <div class="blocked-logs">
+                            <div class="blocked-logs-header">
+                                <h3>最近攔截的內容（全站 + 本機備用）</h3>
+                                <div style="display:flex; gap:0.5rem; flex-wrap: wrap;">
+                                    <button class="refresh-btn" onclick="loadBlockedLogs()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">🔄 重新載入</button>
+                                    <button class="refresh-btn" onclick="clearBlockedLogs()" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent);">🗑️ 清除記錄</button>
+                                </div>
+                            </div>
+                            <div id="blockedLogsList"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -831,6 +948,11 @@
             </div>
         </div>
     </footer>
+
+    <!-- 右下角一鍵重整 -->
+    <button class="admin-fab" type="button" onclick="refreshAll()" aria-label="重整所有資料" title="重整所有資料">
+        ↻
+    </button>
 
     <script src="analytics.js"></script>
     <script src="filter.js"></script>
@@ -1839,6 +1961,7 @@
             const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
             
             let stats = null;
+            let visits = [];
             
             if (useAPI) {
                 try {
@@ -1854,9 +1977,9 @@
                             monthViews: data.monthViews || 0,
                             pageViews: data.pageViews || {},
                             dailyViews: data.dailyViews || {},
-                            hourDistribution: data.hourDistribution || {},
                             countryStats: data.countryStats || {}
                         };
+                        visits = data.visits || [];
                     } else {
                         throw new Error(data.error || '獲取統計失敗');
                     }
@@ -2050,7 +2173,6 @@
                     
                     if (data.success) {
                         stats = {
-                            hourDistribution: data.hourDistribution || {},
                             pageViews: data.pageViews || {},
                             countryStats: data.countryStats || {},
                             visits: data.visits || []
@@ -2064,7 +2186,6 @@
                     if (typeof Analytics !== 'undefined') {
                         const localStats = Analytics.getStats();
                         stats = {
-                            hourDistribution: localStats.hourDistribution || {},
                             pageViews: localStats.pageViews || {},
                             countryStats: {},
                             visits: []
@@ -2076,7 +2197,6 @@
                 if (typeof Analytics !== 'undefined') {
                     const localStats = Analytics.getStats();
                     stats = {
-                        hourDistribution: localStats.hourDistribution || {},
                         pageViews: localStats.pageViews || {},
                         countryStats: {},
                         visits: []
@@ -2089,14 +2209,27 @@
                 return;
             }
             
-            // 載入訪問時間分布圖
-            loadHourDistributionChart(stats.hourDistribution);
+            // 載入訪問時間分布圖（用前端本地時區計算，避免 UTC 偏移）
+            loadHourDistributionChartFromVisits(stats.visits);
             
             // 載入頁面排行
             loadPageRanking(stats.pageViews);
             
             // 載入國家/地區統計
             loadCountryRanking(stats.countryStats);
+        }
+
+        function loadHourDistributionChartFromVisits(visits) {
+            const hourDistribution = {};
+            for (let i = 0; i < 24; i++) hourDistribution[i] = 0;
+            (visits || []).forEach(v => {
+                try {
+                    const d = new Date(v.timestamp);
+                    const h = d.getHours(); // 由瀏覽器本地時區決定
+                    hourDistribution[h] = (hourDistribution[h] || 0) + 1;
+                } catch (e) {}
+            });
+            loadHourDistributionChart(hourDistribution);
         }
         
         function loadCountryRanking(countryStats) {
@@ -2201,6 +2334,15 @@
         function refreshAnalytics() {
             loadAnalytics();
         }
+
+        // 右下角一鍵重整（全部資料）
+        function refreshAll() {
+            try { loadDashboard(); } catch(e) {}
+            try { loadMessages(); } catch(e) {}
+            try { loadAnalytics(); } catch(e) {}
+            try { loadFilters(); } catch(e) {}
+            try { loadSettings(); } catch(e) {}
+        }
         
         function exportAnalytics(format) {
             if (typeof Analytics === 'undefined') {
@@ -2275,6 +2417,90 @@
                     </div>
                 </div>
             `).join('');
+
+            // 同步載入攔截內容
+            loadBlockedLogs();
+        }
+
+        function loadBlockedLogs() {
+            const list = document.getElementById('blockedLogsList');
+            if (!list) return;
+            // 先顯示載入中
+            list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">載入中...</p>';
+
+            const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-blocked';
+            const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+
+            const render = (items, sourceLabel) => {
+                if (!items || !items.length) {
+                    list.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">目前沒有攔截記錄（${sourceLabel}）</p>`;
+                    return;
+                }
+
+                list.innerHTML = items.slice(0, 50).map(item => {
+                    let timeText = '未知時間';
+                    try { timeText = new Date(item.timestamp).toLocaleString('zh-TW'); } catch(e) {}
+
+                    const words = item.matches
+                        ? (item.matches || []).map(m => m.word).filter(Boolean)
+                        : String(item.words || '').split('、').map(s => s.trim()).filter(Boolean);
+                    const wordTags = words.length ? words.map(w => `<span class="blocked-tag">${escapeHtml(w)}</span>`).join('') : '<span class="blocked-tag">未知</span>';
+                    const nameLine = item.name ? `姓名：${item.name}` : '姓名：未提供';
+                    const msg = item.message || '';
+                    const country = item.country ? `　·　${item.country}` : '';
+
+                    return `
+                        <div class="blocked-log-item">
+                            <div class="blocked-log-meta">
+                                <div class="left">${escapeHtml(nameLine)}　·　頁面：${escapeHtml(item.page || item.path || '/')} ${escapeHtml(country)}　·　來源：${escapeHtml(sourceLabel)}</div>
+                                <div class="right">${escapeHtml(timeText)}</div>
+                            </div>
+                            <div class="blocked-log-tags">${wordTags}</div>
+                            <div class="blocked-log-content">
+                                <details>
+                                    <summary>查看被攔截的訊息內容</summary>
+                                    <pre>${escapeHtml(msg)}</pre>
+                                </details>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            if (useAPI) {
+                fetch(API_ENDPOINT)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.success && Array.isArray(data.logs)) {
+                            render(data.logs, '全站');
+                        } else {
+                            throw new Error(data?.error || 'API 讀取失敗');
+                        }
+                    })
+                    .catch(() => {
+                        // fallback：本機
+                        if (typeof ContentFilter !== 'undefined' && typeof ContentFilter.getBlockedLogs === 'function') {
+                            render(ContentFilter.getBlockedLogs(), '本機');
+                        } else {
+                            list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">無法載入攔截記錄</p>';
+                        }
+                    });
+            } else {
+                // 只用本機
+                if (typeof ContentFilter !== 'undefined' && typeof ContentFilter.getBlockedLogs === 'function') {
+                    render(ContentFilter.getBlockedLogs(), '本機');
+                } else {
+                    list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">無法載入攔截記錄</p>';
+                }
+            }
+        }
+
+        function clearBlockedLogs() {
+            if (!confirm('確定要清除本機的攔截記錄嗎？')) return;
+            if (typeof ContentFilter !== 'undefined' && typeof ContentFilter.clearBlockedLogs === 'function') {
+                ContentFilter.clearBlockedLogs();
+            }
+            loadBlockedLogs();
         }
         
         function toggleFilterEnabled() {

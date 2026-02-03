@@ -25,6 +25,22 @@ export default async function handler(req, res) {
         const repoOwner = 'oldfish101240';
         const repoName = 'whisper-box';
         const githubToken = process.env.GITHUB_TOKEN;
+
+        function normalizePath(p) {
+            if (!p) return '/';
+            let path = String(p).trim();
+            // GitHub Pages 可能會帶上 repo 子路徑，先保留最後一段資訊即可（避免 admin 顯示太長）
+            // 例如 /oldfish-profile/index.html -> /index.html
+            const parts = path.split('/').filter(Boolean);
+            if (parts.length >= 2 && parts[0] === 'oldfish-profile') {
+                path = '/' + parts.slice(1).join('/');
+            }
+            if (path === '/index.html') return '/';
+            if (path.endsWith('/index.html')) return path.slice(0, -'/index.html'.length) || '/';
+            // 統一尾端 slash（除了根目錄）
+            if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+            return path || '/';
+        }
         
         // 讀取所有訪問記錄（使用 label 過濾）
         const url = `https://api.github.com/repos/${repoOwner}/${repoName}/issues?labels=analytics,visit-track&state=all&per_page=100&sort=created&direction=desc`;
@@ -62,7 +78,7 @@ export default async function handler(req, res) {
                 id: issue.number,
                 timestamp: timeMatch ? timeMatch[1].trim() : issue.created_at,
                 date: issue.created_at.split('T')[0],
-                path: pathMatch ? pathMatch[1].trim() : '/',
+                path: normalizePath(pathMatch ? pathMatch[1].trim() : '/'),
                 referrer: referrerMatch ? referrerMatch[1].trim() : '直接訪問',
                 ip: ipMatch ? ipMatch[1].trim() : 'unknown',
                 country: countryMatch ? countryMatch[1].trim() : '未知',
@@ -88,7 +104,7 @@ export default async function handler(req, res) {
             dailyViews[date] = (dailyViews[date] || 0) + 1;
         });
         
-        // 頁面瀏覽量
+        // 頁面瀏覽量（已正規化 index / 首頁）
         const pageViews = {};
         visits.forEach(visit => {
             const path = visit.path;
@@ -102,20 +118,7 @@ export default async function handler(req, res) {
             countryStats[country] = (countryStats[country] || 0) + 1;
         });
         
-        // 訪問時間分布
-        const hourDistribution = {};
-        for (let i = 0; i < 24; i++) {
-            hourDistribution[i] = 0;
-        }
-        visits.forEach(visit => {
-            try {
-                const date = new Date(visit.timestamp);
-                const hour = date.getHours();
-                hourDistribution[hour] = (hourDistribution[hour] || 0) + 1;
-            } catch (e) {
-                // 忽略日期解析錯誤
-            }
-        });
+        // 注意：訪問時間分布不在後端計算（避免 UTC 時區誤差），由前端以使用者本地時區計算
         
         // 計算今日/本週/本月瀏覽量
         const todayViews = dailyViews[today] || 0;
@@ -145,8 +148,7 @@ export default async function handler(req, res) {
             visits: visits,
             dailyViews: dailyViews,
             pageViews: pageViews,
-            countryStats: countryStats,
-            hourDistribution: hourDistribution
+            countryStats: countryStats
         });
         
     } catch (error) {

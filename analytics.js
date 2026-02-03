@@ -58,7 +58,7 @@ const Analytics = {
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
         const timeStr = now.toISOString();
-        const path = options.path || window.location.pathname;
+        const path = this.normalizePath(options.path || window.location.pathname);
         const referrer = options.referrer || document.referrer || 'direct';
         const userAgent = options.userAgent || navigator.userAgent || '';
         
@@ -113,6 +113,21 @@ const Analytics = {
         
         // 定期清理舊數據
         this.cleanupOldRecordsIfNeeded();
+    },
+
+    // 正規化路徑（統一首頁與 index）
+    normalizePath(p) {
+        if (!p) return '/';
+        let path = String(p).trim();
+        // GitHub Pages：/oldfish-profile/index.html -> /index.html
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length >= 2 && parts[0] === 'oldfish-profile') {
+            path = '/' + parts.slice(1).join('/');
+        }
+        if (path === '/index.html') return '/';
+        if (path.endsWith('/index.html')) return path.slice(0, -'/index.html'.length) || '/';
+        if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+        return path || '/';
     },
     
     // 獲取用戶指紋（簡單版本，用於去重）
@@ -328,7 +343,7 @@ if (typeof window !== 'undefined') {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    path: window.location.pathname,
+                    path: Analytics.normalizePath(window.location.pathname),
                     referrer: document.referrer || '直接訪問'
                 })
             }).catch(error => {

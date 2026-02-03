@@ -1,31 +1,47 @@
-// 網站訪問追蹤 API 端點
+// 內容攔截紀錄 API 端點（將前端偵測到的不當內容寫入 GitHub Issues）
 // 部署到 Vercel、Netlify Functions 或其他 serverless 平台
 //
 // 環境變數：
 // GITHUB_TOKEN: GitHub Personal Access Token (需要 repo 權限)
 //
 // 使用方法：
-// POST /api/track-visit
-// Body: { path: "/index.html", referrer: "https://example.com" }
+// POST /api/log-blocked
+// Body: { path, name, message, matches: [{word, category}] }
 
 export default async function handler(req, res) {
     // 設置 CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
-    
+
     try {
-        const { path, referrer } = req.body;
-        
-        // 獲取客戶端 IP 地址（Vercel / Proxy 友善）
+        const { path, name, message, matches } = req.body || {};
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'Missing message' });
+        }
+
+        const repoOwner = 'oldfish101240';
+        const repoName = 'whisper-box';
+        const githubToken = process.env.GITHUB_TOKEN;
+
+        if (!githubToken) {
+            return res.status(200).json({
+                success: true,
+                logged: false,
+                message: 'GitHub token not configured'
+            });
+        }
+
+        // IP + 地理資訊（沿用 track-visit 作法）
         const forwarded =
             req.headers['x-vercel-forwarded-for'] ||
             req.headers['x-forwarded-for'] ||
@@ -38,18 +54,14 @@ export default async function handler(req, res) {
             req.connection?.remoteAddress ||
             'unknown';
         const clientIP = clientIPRaw.replace('::ffff:', '');
-        
-        // 獲取用戶代理
+
         const userAgent = req.headers['user-agent'] || 'unknown';
-        
-        // 獲取國家/地區信息（使用免費的 IP 地理位置 API）
+
         let country = '未知';
         let region = '未知';
         let city = '未知';
-        
+
         try {
-            // 使用 ip-api.com（免費，無需 API key，但有速率限制）
-            // 如果 IP 是 localhost / 私有網段 / IPv6 loopback，跳過查詢
             const isPrivate =
                 !clientIP ||
                 clientIP === 'unknown' ||
@@ -61,7 +73,6 @@ export default async function handler(req, res) {
                 clientIP.startsWith('fd');
 
             if (!isPrivate) {
-                // 3 秒超時
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 3000);
                 const geoResponse = await fetch(
@@ -69,7 +80,7 @@ export default async function handler(req, res) {
                     { signal: controller.signal }
                 );
                 clearTimeout(timeout);
-                
+
                 if (geoResponse.ok) {
                     const geoData = await geoResponse.json();
                     if (geoData.status === 'success') {
@@ -80,39 +91,34 @@ export default async function handler(req, res) {
                 }
             }
         } catch (geoError) {
-            console.warn('獲取地理位置失敗:', geoError);
-            // 繼續執行，使用預設值
+            // 靜默失敗
         }
-        
-        const repoOwner = 'oldfish101240';
-        const repoName = 'whisper-box'; // 使用同一個 repo，或創建新的 analytics repo
-        const githubToken = process.env.GITHUB_TOKEN;
-        
-        if (!githubToken) {
-            // 如果沒有 token，返回成功但不記錄（避免前端錯誤）
-            return res.status(200).json({
-                success: true,
-                tracked: false,
-                message: 'GitHub token not configured'
-            });
-        }
-        
-        // 創建 GitHub Issue 來記錄訪問（使用 label 區分）
+
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
         const timeStr = now.toISOString();
-        
-        const issueTitle = `訪問記錄：${dateStr} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        const issueBody = `## 網站訪問記錄
+
+        const words = Array.isArray(matches) ? matches.map(m => m?.word).filter(Boolean) : [];
+        const wordsText = words.length ? words.join('、') : '未知';
+
+        const issueTitle = `攔截紀錄：${dateStr} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}（${wordsText}）`;
+        const issueBody = `## 內容攔截紀錄
 
 **時間：** ${timeStr}
 **頁面：** ${path || '/'}
-**來源：** ${referrer || '直接訪問'}
+**姓名：** ${name || '未提供'}
+**觸發詞：** ${wordsText}
 **IP：** ${clientIP}
 **國家/地區：** ${country}
 **區域：** ${region}
 **城市：** ${city}
 **用戶代理：** ${userAgent}
+
+---
+
+**被攔截內容：**
+
+${message}
 
 ---
 *此記錄由網站自動生成*`;
@@ -127,34 +133,31 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 title: issueTitle,
                 body: issueBody,
-                labels: ['analytics', 'visit-track']
+                labels: ['analytics', 'blocked-content']
             })
         });
-        
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to track visit');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to log blocked content');
         }
-        
+
         const issueData = await response.json();
-        
+
         return res.status(200).json({
             success: true,
-            tracked: true,
+            logged: true,
             issueNumber: issueData.number,
-            country: country,
-            region: region,
-            city: city
+            issueUrl: issueData.html_url
         });
-        
     } catch (error) {
-        console.error('Error tracking visit:', error);
-        // 即使出錯也返回成功，避免影響用戶體驗
+        console.error('Error logging blocked content:', error);
         return res.status(200).json({
             success: true,
-            tracked: false,
+            logged: false,
             error: error.message || 'Internal server error'
         });
     }
 }
+
 

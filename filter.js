@@ -6,6 +6,8 @@ const ContentFilter = {
     STORAGE_KEY: 'contentFilters',
     FILTER_ENABLED_KEY: 'filterEnabled',
     FILTER_STATS_KEY: 'filterStats',
+    BLOCKED_LOG_KEY: 'blockedMessages',
+    MAX_BLOCKED_LOGS: 200,
     
     // 初始化
     init() {
@@ -36,6 +38,11 @@ const ContentFilter = {
                 blockedByCategory: {},
                 lastBlocked: null
             }));
+        }
+
+        // 初始化攔截內容記錄
+        if (!localStorage.getItem(this.BLOCKED_LOG_KEY)) {
+            localStorage.setItem(this.BLOCKED_LOG_KEY, JSON.stringify([]));
         }
     },
     
@@ -164,6 +171,49 @@ const ContentFilter = {
         } catch (error) {
             console.error('記錄過濾統計失敗:', error);
         }
+    },
+
+    // 記錄被攔截的內容（供 admin 查看）
+    logBlockedContent(entry) {
+        try {
+            const raw = localStorage.getItem(this.BLOCKED_LOG_KEY);
+            let logs = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(logs)) logs = [];
+
+            const safeEntry = {
+                id: Date.now() + Math.random(),
+                timestamp: new Date().toISOString(),
+                page: entry?.page || '/',
+                name: entry?.name || '',
+                message: entry?.message || '',
+                matches: Array.isArray(entry?.matches) ? entry.matches.map(m => ({
+                    word: m.word,
+                    category: m.category || 'general'
+                })) : []
+            };
+
+            logs.unshift(safeEntry);
+            if (logs.length > this.MAX_BLOCKED_LOGS) {
+                logs = logs.slice(0, this.MAX_BLOCKED_LOGS);
+            }
+            localStorage.setItem(this.BLOCKED_LOG_KEY, JSON.stringify(logs));
+        } catch (error) {
+            console.error('保存攔截內容失敗:', error);
+        }
+    },
+
+    getBlockedLogs() {
+        try {
+            const raw = localStorage.getItem(this.BLOCKED_LOG_KEY);
+            const logs = raw ? JSON.parse(raw) : [];
+            return Array.isArray(logs) ? logs : [];
+        } catch (error) {
+            return [];
+        }
+    },
+
+    clearBlockedLogs() {
+        localStorage.setItem(this.BLOCKED_LOG_KEY, JSON.stringify([]));
     },
     
     // 獲取過濾統計
