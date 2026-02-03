@@ -1134,9 +1134,9 @@
             }
         }
         
-        // 刪除訊息（關閉 GitHub Issue）
+        // 刪除訊息（真正刪除 GitHub Issue）
         async function deleteMessage(id) {
-            if (!confirm('確定要刪除這則訊息嗎？這將會關閉 GitHub Issue。')) {
+            if (!confirm('確定要刪除這則訊息嗎？此操作無法復原。')) {
                 return;
             }
             
@@ -1145,23 +1145,77 @@
                 const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
                 
                 if (useAPI && typeof id === 'number' && id > 0) {
-                    // 使用 GitHub Issues API 關閉 Issue
-                    const closeApiEndpoint = 'https://oldfish-profile.vercel.app/api/close-issue';
+                    // 使用 GitHub Issues API 真正刪除 Issue（關閉並清空內容）
+                    const deleteApiEndpoint = 'https://oldfish-profile.vercel.app/api/delete-issue';
                     
-                    const response = await fetch(closeApiEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            issueNumber: id
-                        })
-                    });
+                    let response;
+                    try {
+                        response = await fetch(deleteApiEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                issueNumber: id
+                            })
+                        });
+                    } catch (fetchError) {
+                        // 如果 fetch 失敗（API 不存在或網路問題），回退到關閉 Issue
+                        console.warn('刪除 API 不可用，回退到關閉 Issue:', fetchError);
+                        const closeApiEndpoint = 'https://oldfish-profile.vercel.app/api/close-issue';
+                        response = await fetch(closeApiEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                issueNumber: id
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                alert('注意：刪除 API 尚未部署，已改為關閉 Issue。請部署 api/delete-issue.js 以啟用完整刪除功能。');
+                                loadMessages();
+                                return;
+                            }
+                        }
+                        throw new Error('無法連接到 API 伺服器，請確認 API 已正確部署');
+                    }
+                    
+                    if (!response.ok) {
+                        // 如果刪除 API 返回錯誤，嘗試回退到關閉 Issue
+                        if (response.status === 404) {
+                            console.warn('刪除 API 不存在，回退到關閉 Issue');
+                            const closeApiEndpoint = 'https://oldfish-profile.vercel.app/api/close-issue';
+                            const fallbackResponse = await fetch(closeApiEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    issueNumber: id
+                                })
+                            });
+                            
+                            if (fallbackResponse.ok) {
+                                const data = await fallbackResponse.json();
+                                if (data.success) {
+                                    alert('注意：刪除 API 尚未部署，已改為關閉 Issue。請部署 api/delete-issue.js 以啟用完整刪除功能。');
+                                    loadMessages();
+                                    return;
+                                }
+                            }
+                        }
+                        const errorData = await response.json().catch(() => ({ error: '未知錯誤' }));
+                        throw new Error(errorData.error || '刪除失敗');
+                    }
                     
                     const data = await response.json();
                     
-                    if (response.ok && data.success) {
-                        // 成功關閉 Issue，重新載入訊息
+                    if (data.success) {
+                        // 成功刪除 Issue，重新載入訊息
                         loadMessages();
                     } else {
                         throw new Error(data.error || '刪除失敗');

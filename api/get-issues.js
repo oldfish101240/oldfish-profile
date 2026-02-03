@@ -47,23 +47,28 @@ export default async function handler(req, res) {
         
         const issues = await response.json();
         
-        // 解析 Issues 為訊息格式
-        const messages = issues.map(issue => {
-            // 從 Issue body 中解析訊息
-            const body = issue.body || '';
-            const nameMatch = body.match(/\*\*姓名：\*\* (.+)/);
-            const messageMatch = body.match(/\*\*訊息內容：\*\*\s*\n\n(.+?)\n\n---/s);
-            
-            return {
-                id: issue.number,
-                name: nameMatch ? nameMatch[1].trim() : '未知',
-                message: messageMatch ? messageMatch[1].trim() : issue.body,
-                timestamp: issue.created_at,
-                read: issue.state === 'closed',
-                issueUrl: issue.html_url,
-                issueNumber: issue.number
-            };
-        });
+        // 解析 Issues 為訊息格式，並過濾掉已刪除的 Issue
+        const messages = issues
+            .filter(issue => {
+                // 過濾掉標題為 "[已刪除]" 的 Issue
+                return issue.title !== '[已刪除]';
+            })
+            .map(issue => {
+                // 從 Issue body 中解析訊息
+                const body = issue.body || '';
+                const nameMatch = body.match(/\*\*姓名：\*\* (.+)/);
+                const messageMatch = body.match(/\*\*訊息內容：\*\*\s*\n\n(.+?)\n\n---/s);
+                
+                return {
+                    id: issue.number,
+                    name: nameMatch ? nameMatch[1].trim() : '未知',
+                    message: messageMatch ? messageMatch[1].trim() : issue.body,
+                    timestamp: issue.created_at,
+                    read: issue.state === 'closed',
+                    issueUrl: issue.html_url,
+                    issueNumber: issue.number
+                };
+            });
         
         return res.status(200).json({
             success: true,
