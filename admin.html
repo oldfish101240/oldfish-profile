@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         // 在頁面渲染前立即讀取並應用主題設定，避免閃爍
         (function() {
@@ -229,6 +230,349 @@
             box-shadow: var(--shadow-md);
         }
         
+        /* Tab 導航樣式 */
+        .admin-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border-color);
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        
+        .admin-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        
+        .admin-tab:hover {
+            color: var(--primary);
+        }
+        
+        .admin-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .admin-tab-content {
+            position: relative;
+        }
+        
+        .tab-panel {
+            display: none;
+        }
+        
+        .tab-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 圖表容器 */
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .chart-container {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .chart-container h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        .chart-container canvas {
+            max-height: 300px;
+        }
+        
+        /* 分析統計 */
+        .analytics-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+        }
+        
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .analytics-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .analytics-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .analytics-stat-card {
+            background: var(--bg-section);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .analytics-stat-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+        
+        #pageRankingList {
+            list-style: none;
+            padding: 0;
+        }
+        
+        #pageRankingList li {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* 過濾器管理 */
+        .filters-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+        }
+        
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .filters-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .filter-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .filters-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .filter-item {
+            background: var(--bg-section);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .filter-item-info {
+            flex: 1;
+        }
+        
+        .filter-item-word {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+        
+        .filter-item-category {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .filter-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* 功能開關 */
+        .settings-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+        }
+        
+        .settings-container h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+        
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: var(--bg-section);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .setting-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .setting-info p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--gradient-primary);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* 系統設定 */
+        .system-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+        }
+        
+        .system-container h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+        
+        .system-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        /* 批量操作按鈕 */
+        .message-item {
+            position: relative;
+        }
+        
+        .message-item input[type="checkbox"] {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .message-item.selected {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
         @media (max-width: 768px) {
             .admin-container {
                 padding: 1rem;
@@ -242,6 +586,24 @@
                 grid-template-columns: 1fr;
             }
             
+            .admin-tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .admin-tab {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .message-header {
                 flex-direction: column;
                 gap: 0.5rem;
@@ -249,6 +611,13 @@
             
             .message-time {
                 font-size: 0.8rem;
+            }
+            
+            .filters-header,
+            .analytics-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
             }
         }
     </style>
@@ -288,37 +657,165 @@
         <section class="section section-contact" style="padding-top: 8rem;">
             <div class="admin-container">
             <div class="admin-header">
-                <h1 class="admin-title">悄悄話管理後台</h1>
-                <p class="admin-subtitle">查看和管理所有收到的悄悄話訊息</p>
+                <h1 class="admin-title">網站管理後台</h1>
+                <p class="admin-subtitle">管理網站統計、悄悄話、過濾器和功能開關</p>
             </div>
             
-            <!-- 統計卡片 -->
-            <div class="admin-stats">
-                <div class="stat-card">
-                    <div class="stat-label">總訊息數</div>
-                    <div class="stat-value" id="totalMessages">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">未讀訊息</div>
-                    <div class="stat-value" id="unreadMessages">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">已讀訊息</div>
-                    <div class="stat-value" id="readMessages">0</div>
-                </div>
+            <!-- Tab 導航 -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="dashboard">📊 儀表板</button>
+                <button class="admin-tab" data-tab="messages">💬 悄悄話管理</button>
+                <button class="admin-tab" data-tab="analytics">📈 網站統計</button>
+                <button class="admin-tab" data-tab="filters">🔍 過濾器管理</button>
+                <button class="admin-tab" data-tab="settings">⚙️ 功能開關</button>
+                <button class="admin-tab" data-tab="system">🔐 系統設定</button>
             </div>
             
-            <!-- 訊息列表 -->
-            <div class="messages-container">
-                <div class="messages-header">
-                    <h2 class="messages-title">所有訊息</h2>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="refresh-btn" onclick="loadMessages()">🔄 重新整理</button>
-                        <button class="refresh-btn" onclick="showChangePasswordDialog()" style="background: var(--gradient-secondary);">🔐 更改密碼</button>
+            <!-- Tab 內容區域 -->
+            <div class="admin-tab-content">
+                <!-- 儀表板 Tab -->
+                <div class="tab-panel active" id="dashboard-panel">
+                    <div class="admin-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">總瀏覽人次</div>
+                            <div class="stat-value" id="totalViews">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">今日瀏覽量</div>
+                            <div class="stat-value" id="todayViews">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">本週瀏覽量</div>
+                            <div class="stat-value" id="weekViews">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">本月瀏覽量</div>
+                            <div class="stat-value" id="monthViews">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">總訊息數</div>
+                            <div class="stat-value" id="totalMessages">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">未讀訊息</div>
+                            <div class="stat-value" id="unreadMessages">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-charts">
+                        <div class="chart-container">
+                            <h3>最近 30 天瀏覽量趨勢</h3>
+                            <canvas id="viewsChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>頁面瀏覽排行</h3>
+                            <canvas id="pagesChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="messages-list" id="messagesList">
-                    <!-- 訊息將在這裡動態載入 -->
+                
+                <!-- 悄悄話管理 Tab -->
+                <div class="tab-panel" id="messages-panel">
+                    <div class="messages-container">
+                        <div class="messages-header">
+                            <h2 class="messages-title">所有訊息</h2>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="refresh-btn" onclick="loadMessages()">🔄 重新整理</button>
+                                <button class="refresh-btn" id="selectAllBtn" onclick="toggleSelectAll()">☑️ 全選</button>
+                                <button class="refresh-btn" id="bulkMarkReadBtn" onclick="bulkMarkAsRead()" style="display: none;">✓ 批量標記已讀</button>
+                                <button class="refresh-btn" id="bulkDeleteBtn" onclick="bulkDelete()" style="display: none; background: var(--accent);">🗑️ 批量刪除</button>
+                            </div>
+                        </div>
+                        <div class="messages-list" id="messagesList">
+                            <!-- 訊息將在這裡動態載入 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 網站統計 Tab -->
+                <div class="tab-panel" id="analytics-panel">
+                    <div class="analytics-container">
+                        <div class="analytics-header">
+                            <h2>網站統計分析</h2>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="refresh-btn" onclick="refreshAnalytics()">🔄 重新整理</button>
+                                <button class="refresh-btn" onclick="exportAnalytics('csv')">📥 匯出 CSV</button>
+                                <button class="refresh-btn" onclick="exportAnalytics('json')">📥 匯出 JSON</button>
+                            </div>
+                        </div>
+                        
+                        <div class="analytics-stats-grid">
+                            <div class="analytics-stat-card">
+                                <h3>訪問時間分布</h3>
+                                <canvas id="hourDistributionChart"></canvas>
+                            </div>
+                            <div class="analytics-stat-card">
+                                <h3>國家/地區訪問排行</h3>
+                                <div id="pageRankingList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 過濾器管理 Tab -->
+                <div class="tab-panel" id="filters-panel">
+                    <div class="filters-container">
+                        <div class="filters-header">
+                            <h2>內容過濾器管理</h2>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" id="filterEnabledToggle" checked onchange="toggleFilterEnabled()">
+                                    <span>啟用過濾器</span>
+                                </label>
+                                <button class="refresh-btn" onclick="showAddFilterDialog()">➕ 新增過濾詞</button>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-stats">
+                            <div class="stat-card">
+                                <div class="stat-label">總攔截次數</div>
+                                <div class="stat-value" id="totalBlocked">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">最後攔截時間</div>
+                                <div class="stat-value" id="lastBlocked" style="font-size: 1rem;">從未</div>
+                            </div>
+                        </div>
+                        
+                        <div class="filters-list" id="filtersList">
+                            <!-- 過濾詞列表將在這裡動態載入 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 功能開關 Tab -->
+                <div class="tab-panel" id="settings-panel">
+                    <div class="settings-container">
+                        <h2>功能開關</h2>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h3>悄悄話功能</h3>
+                                    <p>控制用戶是否可以提交悄悄話</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="whisperEnabledToggle" checked onchange="toggleWhisperEnabled()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系統設定 Tab -->
+                <div class="tab-panel" id="system-panel">
+                    <div class="system-container">
+                        <h2>系統設定</h2>
+                        <div class="system-actions">
+                            <button class="refresh-btn" onclick="showChangePasswordDialog()">🔐 更改密碼</button>
+                            <button class="refresh-btn" onclick="clearAnalyticsData()" style="background: var(--accent);">🗑️ 清除統計數據</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             </div>
@@ -335,6 +832,8 @@
         </div>
     </footer>
 
+    <script src="analytics.js"></script>
+    <script src="filter.js"></script>
     <script src="script.js"></script>
     <script>
         // ============================================
@@ -1064,7 +1563,11 @@
                     `<a href="${message.issueUrl}" target="_blank" style="color: var(--primary); text-decoration: none; margin-left: 0.5rem;">#${message.issueNumber}</a>` : 
                     '';
                 
+                messageItem.style.position = 'relative';
+                messageItem.style.paddingLeft = '3rem';
+                
                 messageItem.innerHTML = `
+                    <input type="checkbox" style="position: absolute; top: 1rem; left: 1rem; width: 20px; height: 20px; cursor: pointer; z-index: 10;" onchange="handleMessageCheckbox(this, ${message.id})">
                     <div class="message-header">
                         <div class="message-info">
                             <div class="message-name">${escapeHtml(message.name || '未提供')}${issueLink}</div>
@@ -1292,6 +1795,656 @@
         
         console.log('提示：在控制台輸入 debugMessages() 可以查看所有訊息');
         console.log('提示：在控制台輸入 reloadMessages() 可以重新載入訊息');
+        
+        // ============================================
+        // Tab 切換功能
+        // ============================================
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                // 更新 Tab 按鈕狀態
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // 更新 Tab 面板顯示
+                document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                const targetPanel = document.getElementById(`${targetTab}-panel`);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                    
+                    // 根據 Tab 載入相應數據
+                    if (targetTab === 'dashboard') {
+                        loadDashboard();
+                    } else if (targetTab === 'analytics') {
+                        loadAnalytics();
+                    } else if (targetTab === 'filters') {
+                        loadFilters();
+                    } else if (targetTab === 'settings') {
+                        loadSettings();
+                    }
+                }
+            });
+        });
+        
+        // ============================================
+        // 儀表板功能
+        // ============================================
+        let viewsChart = null;
+        let pagesChart = null;
+        let countryChart = null;
+        
+        async function loadDashboard() {
+            const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-visits';
+            const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+            
+            let stats = null;
+            
+            if (useAPI) {
+                try {
+                    // 從後端 API 獲取真實的訪問統計
+                    const response = await fetch(API_ENDPOINT);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        stats = {
+                            totalViews: data.totalViews || 0,
+                            todayViews: data.todayViews || 0,
+                            weekViews: data.weekViews || 0,
+                            monthViews: data.monthViews || 0,
+                            pageViews: data.pageViews || {},
+                            dailyViews: data.dailyViews || {},
+                            hourDistribution: data.hourDistribution || {},
+                            countryStats: data.countryStats || {}
+                        };
+                    } else {
+                        throw new Error(data.error || '獲取統計失敗');
+                    }
+                } catch (error) {
+                    console.warn('從 API 獲取統計失敗，使用本地數據:', error);
+                    // 回退到本地統計
+                    if (typeof Analytics !== 'undefined') {
+                        stats = Analytics.getStats();
+                    }
+                }
+            } else {
+                // 使用本地統計（備用方案）
+                if (typeof Analytics !== 'undefined') {
+                    stats = Analytics.getStats();
+                }
+            }
+            
+            if (!stats) {
+                console.error('無法獲取統計數據');
+                return;
+            }
+            
+            // 更新統計卡片
+            document.getElementById('totalViews').textContent = stats.totalViews.toLocaleString();
+            document.getElementById('todayViews').textContent = stats.todayViews.toLocaleString();
+            document.getElementById('weekViews').textContent = stats.weekViews.toLocaleString();
+            document.getElementById('monthViews').textContent = stats.monthViews.toLocaleString();
+            
+            // 載入圖表
+            loadViewsChart(stats.dailyViews);
+            loadPagesChart(stats.pageViews);
+            loadCountryChart(stats.countryStats);
+        }
+        
+        function loadViewsChart(dailyViews) {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js 未載入');
+                return;
+            }
+            
+            const ctx = document.getElementById('viewsChart');
+            if (!ctx) return;
+            
+            // 準備最近 30 天的數據
+            const today = new Date();
+            const dailyData = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                dailyData.push({
+                    date: dateStr,
+                    views: dailyViews[dateStr] || 0
+                });
+            }
+            
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const isDark = theme === 'dark';
+            
+            const chartColors = {
+                border: isDark ? 'rgba(59, 130, 246, 1)' : 'rgba(37, 99, 235, 1)',
+                background: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(37, 99, 235, 0.1)'
+            };
+            
+            if (viewsChart) {
+                viewsChart.destroy();
+            }
+            
+            viewsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dailyData.map(d => d.date.split('-')[1] + '/' + d.date.split('-')[2]),
+                    datasets: [{
+                        label: '瀏覽量',
+                        data: dailyData.map(d => d.views),
+                        borderColor: chartColors.border,
+                        backgroundColor: chartColors.background,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function loadPagesChart(pageViews) {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js 未載入');
+                return;
+            }
+            
+            const ctx = document.getElementById('pagesChart');
+            if (!ctx) return;
+            
+            const sortedPages = Object.entries(pageViews || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            if (sortedPages.length === 0) {
+                ctx.parentElement.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無數據</p>';
+                return;
+            }
+            
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const isDark = theme === 'dark';
+            
+            const colors = [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(6, 182, 212, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(236, 72, 153, 0.8)',
+                'rgba(251, 146, 60, 0.8)'
+            ];
+            
+            if (pagesChart) {
+                pagesChart.destroy();
+            }
+            
+            pagesChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedPages.map(([page]) => {
+                        if (page === '/' || page === '/index.html') return '首頁';
+                        const pageName = page.split('/').pop().replace('.html', '');
+                        return pageName || page;
+                    }),
+                    datasets: [{
+                        data: sortedPages.map(([, views]) => views),
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: isDark ? '#CBD5E1' : '#475569',
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // ============================================
+        // 網站統計功能
+        // ============================================
+        let hourChart = null;
+        
+        async function loadAnalytics() {
+            const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-visits';
+            const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
+            
+            let stats = null;
+            
+            if (useAPI) {
+                try {
+                    // 從後端 API 獲取真實的訪問統計
+                    const response = await fetch(API_ENDPOINT);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        stats = {
+                            hourDistribution: data.hourDistribution || {},
+                            pageViews: data.pageViews || {},
+                            countryStats: data.countryStats || {},
+                            visits: data.visits || []
+                        };
+                    } else {
+                        throw new Error(data.error || '獲取統計失敗');
+                    }
+                } catch (error) {
+                    console.warn('從 API 獲取統計失敗，使用本地數據:', error);
+                    // 回退到本地統計
+                    if (typeof Analytics !== 'undefined') {
+                        const localStats = Analytics.getStats();
+                        stats = {
+                            hourDistribution: localStats.hourDistribution || {},
+                            pageViews: localStats.pageViews || {},
+                            countryStats: {},
+                            visits: []
+                        };
+                    }
+                }
+            } else {
+                // 使用本地統計（備用方案）
+                if (typeof Analytics !== 'undefined') {
+                    const localStats = Analytics.getStats();
+                    stats = {
+                        hourDistribution: localStats.hourDistribution || {},
+                        pageViews: localStats.pageViews || {},
+                        countryStats: {},
+                        visits: []
+                    };
+                }
+            }
+            
+            if (!stats) {
+                console.error('無法獲取統計數據');
+                return;
+            }
+            
+            // 載入訪問時間分布圖
+            loadHourDistributionChart(stats.hourDistribution);
+            
+            // 載入頁面排行
+            loadPageRanking(stats.pageViews);
+            
+            // 載入國家/地區統計
+            loadCountryRanking(stats.countryStats);
+        }
+        
+        function loadCountryRanking(countryStats) {
+            const listEl = document.getElementById('pageRankingList');
+            if (!listEl) return;
+            
+            const sortedCountries = Object.entries(countryStats || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (sortedCountries.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無數據</p>';
+                return;
+            }
+            
+            // 更新標題
+            const titleEl = listEl.previousElementSibling;
+            if (titleEl && titleEl.tagName === 'H3') {
+                titleEl.textContent = '國家/地區訪問排行';
+            }
+            
+            listEl.innerHTML = sortedCountries.map(([country, views], index) => {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; margin-bottom: 0.5rem; background: var(--bg-card); border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span style="font-weight: 600; color: var(--primary); width: 24px; text-align: center;">${index + 1}</span>
+                            <span style="color: var(--text-primary);">${country}</span>
+                        </div>
+                        <span style="color: var(--text-secondary); font-weight: 600;">${views.toLocaleString()}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function loadHourDistributionChart(hourDistribution) {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js 未載入');
+                return;
+            }
+            
+            const ctx = document.getElementById('hourDistributionChart');
+            if (!ctx) return;
+            
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const isDark = theme === 'dark';
+            
+            const hours = Array.from({ length: 24 }, (_, i) => i);
+            const views = hours.map(h => hourDistribution[h] || 0);
+            
+            if (hourChart) {
+                hourChart.destroy();
+            }
+            
+            hourChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: hours.map(h => h + ':00'),
+                    datasets: [{
+                        label: '訪問量',
+                        data: views,
+                        backgroundColor: isDark ? 'rgba(59, 130, 246, 0.6)' : 'rgba(37, 99, 235, 0.6)',
+                        borderColor: isDark ? 'rgba(59, 130, 246, 1)' : 'rgba(37, 99, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function loadPageRanking(pageViews) {
+            // 這個函數現在用於載入國家/地區排行，頁面排行已在 loadCountryRanking 中處理
+            // 保留此函數以備未來擴展
+        }
+        
+        function refreshAnalytics() {
+            loadAnalytics();
+        }
+        
+        function exportAnalytics(format) {
+            if (typeof Analytics === 'undefined') {
+                alert('Analytics 未載入');
+                return;
+            }
+            
+            let data, filename, mimeType;
+            
+            if (format === 'csv') {
+                data = Analytics.exportToCSV();
+                filename = `analytics_${new Date().toISOString().split('T')[0]}.csv`;
+                mimeType = 'text/csv';
+            } else {
+                data = Analytics.exportToJSON();
+                filename = `analytics_${new Date().toISOString().split('T')[0]}.json`;
+                mimeType = 'application/json';
+            }
+            
+            const blob = new Blob([data], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // ============================================
+        // 過濾器管理功能
+        // ============================================
+        function loadFilters() {
+            if (typeof ContentFilter === 'undefined') {
+                console.error('ContentFilter 未載入');
+                return;
+            }
+            
+            const filters = ContentFilter.getFilters();
+            const stats = ContentFilter.getStats();
+            
+            // 更新統計
+            document.getElementById('totalBlocked').textContent = stats.totalBlocked.toLocaleString();
+            const lastBlocked = stats.lastBlocked;
+            if (lastBlocked) {
+                const date = new Date(lastBlocked);
+                document.getElementById('lastBlocked').textContent = date.toLocaleString('zh-TW');
+            } else {
+                document.getElementById('lastBlocked').textContent = '從未';
+            }
+            
+            // 更新開關狀態
+            document.getElementById('filterEnabledToggle').checked = ContentFilter.isEnabled();
+            
+            // 載入過濾詞列表
+            const listEl = document.getElementById('filtersList');
+            if (!listEl) return;
+            
+            if (filters.length === 0) {
+                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無過濾詞</p>';
+                return;
+            }
+            
+            listEl.innerHTML = filters.map(filter => `
+                <div class="filter-item">
+                    <div class="filter-item-info">
+                        <div class="filter-item-word">${escapeHtml(filter.word)}</div>
+                        <div class="filter-item-category">分類：${escapeHtml(filter.category)}</div>
+                    </div>
+                    <div class="filter-item-actions">
+                        <button class="refresh-btn" onclick="editFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">✏️ 編輯</button>
+                        <button class="refresh-btn" onclick="removeFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent);">🗑️ 刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleFilterEnabled() {
+            if (typeof ContentFilter === 'undefined') return;
+            const enabled = document.getElementById('filterEnabledToggle').checked;
+            ContentFilter.setEnabled(enabled);
+        }
+        
+        function showAddFilterDialog() {
+            const word = prompt('請輸入要過濾的詞語：');
+            if (!word || !word.trim()) return;
+            
+            const category = prompt('請輸入分類（spam/fraud/general）：', 'general');
+            
+            if (typeof ContentFilter === 'undefined') {
+                alert('ContentFilter 未載入');
+                return;
+            }
+            
+            ContentFilter.addFilter(word.trim(), category.trim() || 'general');
+            loadFilters();
+        }
+        
+        function editFilter(id) {
+            if (typeof ContentFilter === 'undefined') return;
+            
+            const filters = ContentFilter.getFilters();
+            const filter = filters.find(f => f.id === id);
+            if (!filter) return;
+            
+            const newWord = prompt('請輸入新的過濾詞：', filter.word);
+            if (!newWord || !newWord.trim()) return;
+            
+            const newCategory = prompt('請輸入新的分類：', filter.category);
+            
+            ContentFilter.updateFilter(id, {
+                word: newWord.trim(),
+                category: newCategory.trim() || filter.category
+            });
+            loadFilters();
+        }
+        
+        function removeFilter(id) {
+            if (!confirm('確定要刪除這個過濾詞嗎？')) return;
+            
+            if (typeof ContentFilter === 'undefined') return;
+            ContentFilter.removeFilter(id);
+            loadFilters();
+        }
+        
+        // ============================================
+        // 功能開關功能
+        // ============================================
+        function loadSettings() {
+            const enabled = localStorage.getItem('whisperEnabled');
+            const toggle = document.getElementById('whisperEnabledToggle');
+            if (toggle) {
+                toggle.checked = enabled === null || enabled === 'true';
+            }
+        }
+        
+        function toggleWhisperEnabled() {
+            const enabled = document.getElementById('whisperEnabledToggle').checked;
+            localStorage.setItem('whisperEnabled', enabled.toString());
+            alert(enabled ? '悄悄話功能已啟用' : '悄悄話功能已關閉');
+        }
+        
+        // ============================================
+        // 批量操作功能
+        // ============================================
+        let selectedMessages = new Set();
+        
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.message-item input[type="checkbox"]');
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allSelected;
+                const messageId = parseInt(cb.closest('.message-item').id.replace('message-', ''));
+                if (!allSelected) {
+                    selectedMessages.add(messageId);
+                    cb.closest('.message-item').classList.add('selected');
+                } else {
+                    selectedMessages.delete(messageId);
+                    cb.closest('.message-item').classList.remove('selected');
+                }
+            });
+            
+            updateBulkButtons();
+        }
+        
+        function updateBulkButtons() {
+            const hasSelection = selectedMessages.size > 0;
+            document.getElementById('bulkMarkReadBtn').style.display = hasSelection ? 'inline-block' : 'none';
+            document.getElementById('bulkDeleteBtn').style.display = hasSelection ? 'inline-block' : 'none';
+        }
+        
+        function bulkMarkAsRead() {
+            if (selectedMessages.size === 0) return;
+            if (!confirm(`確定要標記 ${selectedMessages.size} 則訊息為已讀嗎？`)) return;
+            
+            selectedMessages.forEach(id => {
+                markAsRead(id);
+            });
+            
+            selectedMessages.clear();
+            updateBulkButtons();
+            setTimeout(() => loadMessages(), 1000);
+        }
+        
+        function bulkDelete() {
+            if (selectedMessages.size === 0) return;
+            if (!confirm(`確定要刪除 ${selectedMessages.size} 則訊息嗎？此操作無法復原。`)) return;
+            
+            selectedMessages.forEach(id => {
+                deleteMessage(id);
+            });
+            
+            selectedMessages.clear();
+            updateBulkButtons();
+            setTimeout(() => loadMessages(), 1000);
+        }
+        
+        // 處理訊息複選框
+        function handleMessageCheckbox(checkbox, messageId) {
+            if (checkbox.checked) {
+                selectedMessages.add(messageId);
+                checkbox.closest('.message-item').classList.add('selected');
+            } else {
+                selectedMessages.delete(messageId);
+                checkbox.closest('.message-item').classList.remove('selected');
+            }
+            updateBulkButtons();
+        }
+        
+        // ============================================
+        // 系統設定功能
+        // ============================================
+        function clearAnalyticsData() {
+            if (!confirm('確定要清除所有統計數據嗎？此操作無法復原。')) return;
+            
+            if (typeof Analytics === 'undefined') {
+                alert('Analytics 未載入');
+                return;
+            }
+            
+            Analytics.reset();
+            alert('統計數據已清除');
+            if (document.querySelector('.admin-tab[data-tab="dashboard"]').classList.contains('active')) {
+                loadDashboard();
+            }
+        }
+        
+        // ============================================
+        // 初始化
+        // ============================================
+        // 頁面載入時初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                loadSettings();
+                if (document.querySelector('.admin-tab.active')?.dataset.tab === 'dashboard') {
+                    loadDashboard();
+                }
+            });
+        } else {
+            loadSettings();
+            if (document.querySelector('.admin-tab.active')?.dataset.tab === 'dashboard') {
+                loadDashboard();
+            }
+        }
     </script>
 </body>
 </html>

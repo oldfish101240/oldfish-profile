@@ -351,6 +351,110 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
+// 功能開關檢查
+// ============================================
+function checkWhisperEnabled() {
+    const enabled = localStorage.getItem('whisperEnabled');
+    // 如果未設置，預設為啟用
+    return enabled === null || enabled === 'true';
+}
+
+// ============================================
+// 顯示功能關閉提醒視窗
+// ============================================
+function showFeatureDisabledModal() {
+    // 檢查是否已經顯示過
+    if (document.getElementById('featureDisabledModal')) {
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'featureDisabledModal';
+    modal.className = 'feature-disabled-modal';
+    
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const isDark = theme === 'dark';
+    
+    modal.innerHTML = `
+        <div class="feature-disabled-modal-backdrop"></div>
+        <div class="feature-disabled-modal-content">
+            <div class="feature-disabled-modal-icon">🔒</div>
+            <h2 class="feature-disabled-modal-title">悄悄話功能已關閉</h2>
+            <p class="feature-disabled-modal-message">
+                抱歉，悄悄話功能目前暫時關閉中。<br>
+                如有需要，請透過其他方式聯繫。
+            </p>
+            <button class="feature-disabled-modal-button" onclick="this.closest('.feature-disabled-modal').remove()">
+                我知道了
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 添加動畫
+    requestAnimationFrame(() => {
+        modal.classList.add('visible');
+    });
+    
+    // 點擊背景關閉
+    modal.querySelector('.feature-disabled-modal-backdrop').addEventListener('click', () => {
+        modal.remove();
+    });
+}
+
+// ============================================
+// 顯示過濾器提醒視窗
+// ============================================
+function showFilterAlertModal(matches) {
+    // 檢查是否已經顯示過
+    if (document.getElementById('filterAlertModal')) {
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'filterAlertModal';
+    modal.className = 'filter-alert-modal';
+    
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const isDark = theme === 'dark';
+    
+    const matchedWords = matches.map(m => m.word).join('、');
+    
+    modal.innerHTML = `
+        <div class="filter-alert-modal-backdrop"></div>
+        <div class="filter-alert-modal-content">
+            <div class="filter-alert-modal-icon">⚠️</div>
+            <h2 class="filter-alert-modal-title">內容包含不當用語</h2>
+            <p class="filter-alert-modal-message">
+                您的訊息中包含以下不當用語：<br>
+                <strong class="filter-alert-modal-words">${matchedWords}</strong>
+            </p>
+            <p class="filter-alert-modal-hint">
+                請修改您的訊息內容後再試。
+            </p>
+            <div class="filter-alert-modal-actions">
+                <button class="filter-alert-modal-button filter-alert-modal-button-primary" onclick="this.closest('.filter-alert-modal').remove()">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 添加動畫
+    requestAnimationFrame(() => {
+        modal.classList.add('visible');
+    });
+    
+    // 點擊背景關閉
+    modal.querySelector('.filter-alert-modal-backdrop').addEventListener('click', () => {
+        modal.remove();
+    });
+}
+
+// ============================================
 // 悄悄話表單提交
 // ============================================
 function initContactForm() {
@@ -358,6 +462,21 @@ function initContactForm() {
     
     if (!contactForm) {
         return; // 不是悄悄話頁面，直接返回
+    }
+    
+    // 檢查功能是否啟用
+    if (!checkWhisperEnabled()) {
+        // 禁用表單
+        contactForm.style.opacity = '0.5';
+        contactForm.style.pointerEvents = 'none';
+        
+        // 顯示提醒視窗
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', showFeatureDisabledModal);
+        } else {
+            showFeatureDisabledModal();
+        }
+        return;
     }
     
     // 創建訊息提示區域
@@ -411,6 +530,26 @@ function initContactForm() {
         if (!name || !message) {
             showMessage('請填寫所有欄位', 'error');
             return;
+        }
+        
+        // 檢查過濾器（如果已載入）
+        if (typeof ContentFilter !== 'undefined') {
+            const filterResult = ContentFilter.detect(name + ' ' + message);
+            if (filterResult.detected) {
+                // 記錄過濾統計
+                filterResult.matches.forEach(match => {
+                    ContentFilter.recordBlock(match.category || 'general');
+                });
+                
+                // 顯示過濾提醒視窗
+                showFilterAlertModal(filterResult.matches);
+                
+                // 恢復按鈕狀態
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                submitButton.style.background = originalBg;
+                return;
+            }
         }
         
         // 顯示載入狀態
