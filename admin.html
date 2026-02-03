@@ -2431,9 +2431,9 @@
             const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-blocked';
             const useAPI = API_ENDPOINT.includes('YOUR_API_URL') === false;
 
-            const render = (items, sourceLabel) => {
+            const render = (items) => {
                 if (!items || !items.length) {
-                    list.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">目前沒有攔截記錄（${sourceLabel}）</p>`;
+                    list.innerHTML = `<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">目前沒有任何攔截記錄</p>`;
                     return;
                 }
 
@@ -2452,7 +2452,7 @@
                     return `
                         <div class="blocked-log-item">
                             <div class="blocked-log-meta">
-                                <div class="left">${escapeHtml(nameLine)}　·　頁面：${escapeHtml(item.page || item.path || '/')} ${escapeHtml(country)}　·　來源：${escapeHtml(sourceLabel)}</div>
+                                <div class="left">${escapeHtml(nameLine)}　·　頁面：${escapeHtml(item.page || item.path || '/')} ${escapeHtml(country)}</div>
                                 <div class="right">${escapeHtml(timeText)}</div>
                             </div>
                             <div class="blocked-log-tags">${wordTags}</div>
@@ -2472,26 +2472,16 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data && data.success && Array.isArray(data.logs)) {
-                            render(data.logs, '全站');
+                            render(data.logs);
                         } else {
                             throw new Error(data?.error || 'API 讀取失敗');
                         }
                     })
                     .catch(() => {
-                        // fallback：本機
-                        if (typeof ContentFilter !== 'undefined' && typeof ContentFilter.getBlockedLogs === 'function') {
-                            render(ContentFilter.getBlockedLogs(), '本機');
-                        } else {
-                            list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">無法載入攔截記錄</p>';
-                        }
+                        list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">無法從伺服器載入攔截記錄，請確認已在 Vercel 設定 GITHUB_TOKEN 並重新部署。</p>';
                     });
             } else {
-                // 只用本機
-                if (typeof ContentFilter !== 'undefined' && typeof ContentFilter.getBlockedLogs === 'function') {
-                    render(ContentFilter.getBlockedLogs(), '本機');
-                } else {
-                    list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">無法載入攔截記錄</p>';
-                }
+                list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1.5rem;">伺服器端 URL 尚未設定完整，請確認 /api/get-blocked 已部署。</p>';
             }
         }
 
