@@ -2153,6 +2153,74 @@
                 }
             });
         }
+
+        function loadCountryChart(countryStats) {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js 未載入');
+                return;
+            }
+            
+            const ctx = document.getElementById('countryChart');
+            if (!ctx) return;
+            
+            const sortedCountries = Object.entries(countryStats || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (sortedCountries.length === 0) {
+                ctx.parentElement.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無數據</p>';
+                return;
+            }
+            
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const isDark = theme === 'dark';
+            
+            if (countryChart) {
+                countryChart.destroy();
+            }
+            
+            countryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedCountries.map(([country]) => country),
+                    datasets: [{
+                        label: '訪問量',
+                        data: sortedCountries.map(([, views]) => views),
+                        backgroundColor: isDark ? 'rgba(34, 197, 94, 0.6)' : 'rgba(16, 185, 129, 0.6)',
+                        borderColor: isDark ? 'rgba(34, 197, 94, 1)' : 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: isDark ? '#CBD5E1' : '#475569'
+                            },
+                            grid: {
+                                color: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
         
         // ============================================
         // 網站統計功能
