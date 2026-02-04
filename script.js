@@ -351,12 +351,100 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================
-// 功能開關檢查
+// 功能開關檢查（伺服器端配置）
 // ============================================
-function checkWhisperEnabled() {
-    const enabled = localStorage.getItem('whisperEnabled');
-    // 如果未設置，預設為啟用
-    return enabled === null || enabled === 'true';
+const ConfigManager = {
+    API_ENDPOINT: 'https://oldfish-profile.vercel.app/api/get-config',
+    CONFIG_CACHE_KEY: 'systemConfigCache',
+    CONFIG_CACHE_TIME: 5 * 60 * 1000, // 5分鐘緩存
+    _configCache: null,
+    _configCacheTime: null,
+    
+    // 載入配置
+    async loadConfig() {
+        try {
+            // 檢查緩存
+            const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+            const cacheTime = localStorage.getItem(this.CONFIG_CACHE_KEY + '_time');
+            
+            if (cached && cacheTime) {
+                const age = Date.now() - parseInt(cacheTime);
+                if (age < this.CONFIG_CACHE_TIME) {
+                    this._configCache = JSON.parse(cached);
+                    this._configCacheTime = parseInt(cacheTime);
+                    return this._configCache;
+                }
+            }
+            
+            // 從 API 載入
+            const response = await fetch(this.API_ENDPOINT);
+            if (!response.ok) throw new Error('Failed to fetch config');
+            
+            const data = await response.json();
+            if (data.success && data.config) {
+                this._configCache = data.config;
+                this._configCacheTime = Date.now();
+                
+                // 更新緩存
+                localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(data.config));
+                localStorage.setItem(this.CONFIG_CACHE_KEY + '_time', this._configCacheTime.toString());
+                
+                return this._configCache;
+            }
+        } catch (error) {
+            console.error('載入系統配置失敗:', error);
+            // 使用緩存或預設值
+            const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+            if (cached) {
+                this._configCache = JSON.parse(cached);
+                return this._configCache;
+            }
+        }
+        
+        // 返回預設配置
+        return {
+            whisperEnabled: true,
+            filterEnabled: true,
+            filters: []
+        };
+    },
+    
+    // 獲取當前配置（同步，使用緩存）
+    getConfig() {
+        if (this._configCache) {
+            return this._configCache;
+        }
+        
+        const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+        if (cached) {
+            this._configCache = JSON.parse(cached);
+            return this._configCache;
+        }
+        
+        return {
+            whisperEnabled: true,
+            filterEnabled: true,
+            filters: []
+        };
+    },
+    
+    // 清除緩存（強制重新載入）
+    clearCache() {
+        this._configCache = null;
+        this._configCacheTime = null;
+        localStorage.removeItem(this.CONFIG_CACHE_KEY);
+        localStorage.removeItem(this.CONFIG_CACHE_KEY + '_time');
+    }
+};
+
+// 頁面載入時預載入配置
+if (typeof window !== 'undefined') {
+    ConfigManager.loadConfig();
+}
+
+async function checkWhisperEnabled() {
+    const config = await ConfigManager.loadConfig();
+    return config.whisperEnabled !== false;
 }
 
 // ============================================
@@ -464,20 +552,20 @@ function initContactForm() {
         return; // 不是悄悄話頁面，直接返回
     }
     
-    // 檢查功能是否啟用
-    if (!checkWhisperEnabled()) {
-        // 禁用表單
-        contactForm.style.opacity = '0.5';
-        contactForm.style.pointerEvents = 'none';
-        
-        // 顯示提醒視窗
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', showFeatureDisabledModal);
-        } else {
+    // 檢查功能是否啟用（異步）
+    checkWhisperEnabled().then(enabled => {
+        if (!enabled) {
+            // 禁用表單
+            contactForm.style.opacity = '0.5';
+            contactForm.style.pointerEvents = 'none';
+            
+            // 顯示提醒視窗
             showFeatureDisabledModal();
         }
-        return;
-    }
+    }).catch(error => {
+        console.error('檢查功能開關失敗:', error);
+        // 出錯時預設啟用，不阻擋用戶
+    });
     
     // 創建訊息提示區域
     let messageAlert = document.getElementById('formMessageAlert');

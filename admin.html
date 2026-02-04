@@ -2374,52 +2374,65 @@
         // ============================================
         // 過濾器管理功能
         // ============================================
-        function loadFilters() {
-            if (typeof ContentFilter === 'undefined') {
-                console.error('ContentFilter 未載入');
-                return;
-            }
+        async function loadFilters() {
+            const API_ENDPOINT = 'https://oldfish-profile.vercel.app/api/get-config';
             
-            const filters = ContentFilter.getFilters();
-            const stats = ContentFilter.getStats();
-            
-            // 更新統計
-            document.getElementById('totalBlocked').textContent = stats.totalBlocked.toLocaleString();
-            const lastBlocked = stats.lastBlocked;
-            if (lastBlocked) {
-                const date = new Date(lastBlocked);
-                document.getElementById('lastBlocked').textContent = date.toLocaleString('zh-TW');
-            } else {
-                document.getElementById('lastBlocked').textContent = '從未';
-            }
-            
-            // 更新開關狀態
-            document.getElementById('filterEnabledToggle').checked = ContentFilter.isEnabled();
-            
-            // 載入過濾詞列表
-            const listEl = document.getElementById('filtersList');
-            if (!listEl) return;
-            
-            if (filters.length === 0) {
-                listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無過濾詞</p>';
-                return;
-            }
-            
-            listEl.innerHTML = filters.map(filter => `
-                <div class="filter-item">
-                    <div class="filter-item-info">
-                        <div class="filter-item-word">${escapeHtml(filter.word)}</div>
-                        <div class="filter-item-category">分類：${escapeHtml(filter.category)}</div>
-                    </div>
-                    <div class="filter-item-actions">
-                        <button class="refresh-btn" onclick="editFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">✏️ 編輯</button>
-                        <button class="refresh-btn" onclick="removeFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent);">🗑️ 刪除</button>
-                    </div>
-                </div>
-            `).join('');
+            try {
+                const response = await fetch(API_ENDPOINT);
+                if (!response.ok) throw new Error('Failed to fetch config');
+                
+                const data = await response.json();
+                if (!data.success || !data.config) {
+                    throw new Error('Invalid config data');
+                }
+                
+                const config = data.config;
+                const filters = Array.isArray(config.filters) ? config.filters : [];
+                
+                // 更新統計（從攔截記錄統計）
+                const stats = typeof ContentFilter !== 'undefined' ? ContentFilter.getStats() : { totalBlocked: 0, lastBlocked: null };
+                document.getElementById('totalBlocked').textContent = stats.totalBlocked.toLocaleString();
+                const lastBlocked = stats.lastBlocked;
+                if (lastBlocked) {
+                    const date = new Date(lastBlocked);
+                    document.getElementById('lastBlocked').textContent = date.toLocaleString('zh-TW');
+                } else {
+                    document.getElementById('lastBlocked').textContent = '從未';
+                }
+                
+                // 更新開關狀態
+                document.getElementById('filterEnabledToggle').checked = config.filterEnabled !== false;
+                
+                // 載入過濾詞列表
+                const listEl = document.getElementById('filtersList');
+                if (!listEl) return;
+                
+                if (filters.length === 0) {
+                    listEl.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">暫無過濾詞</p>';
+                } else {
+                    listEl.innerHTML = filters.map(filter => `
+                        <div class="filter-item">
+                            <div class="filter-item-info">
+                                <div class="filter-item-word">${escapeHtml(filter.word)}</div>
+                                <div class="filter-item-category">分類：${escapeHtml(filter.category)}</div>
+                            </div>
+                            <div class="filter-item-actions">
+                                <button class="refresh-btn" onclick="editFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">✏️ 編輯</button>
+                                <button class="refresh-btn" onclick="removeFilter(${filter.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent);">🗑️ 刪除</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
 
-            // 同步載入攔截內容
-            loadBlockedLogs();
+                // 同步載入攔截內容
+                loadBlockedLogs();
+            } catch (error) {
+                console.error('載入過濾器設定失敗:', error);
+                const listEl = document.getElementById('filtersList');
+                if (listEl) {
+                    listEl.innerHTML = '<p style="color: var(--text-error); text-align: center; padding: 2rem;">載入失敗：' + escapeHtml(error.message) + '</p>';
+                }
+            }
         }
 
         function loadBlockedLogs() {
@@ -2493,69 +2506,192 @@
             loadBlockedLogs();
         }
         
-        function toggleFilterEnabled() {
-            if (typeof ContentFilter === 'undefined') return;
+        async function toggleFilterEnabled() {
             const enabled = document.getElementById('filterEnabledToggle').checked;
-            ContentFilter.setEnabled(enabled);
+            await updateConfig({ filterEnabled: enabled });
+            alert(enabled ? '過濾器已啟用（全站生效）' : '過濾器已關閉（全站生效）');
         }
         
-        function showAddFilterDialog() {
+        async function showAddFilterDialog() {
             const word = prompt('請輸入要過濾的詞語：');
             if (!word || !word.trim()) return;
             
             const category = prompt('請輸入分類（spam/fraud/general）：', 'general');
             
-            if (typeof ContentFilter === 'undefined') {
-                alert('ContentFilter 未載入');
-                return;
+            try {
+                // 先獲取當前配置
+                const response = await fetch('https://oldfish-profile.vercel.app/api/get-config');
+                const data = await response.json();
+                if (!data.success || !data.config) throw new Error('無法獲取當前配置');
+                
+                const config = data.config;
+                const filters = Array.isArray(config.filters) ? config.filters : [];
+                
+                // 添加新過濾詞
+                const newId = filters.length > 0 ? Math.max(...filters.map(f => f.id)) + 1 : 1;
+                filters.push({
+                    id: newId,
+                    word: word.trim(),
+                    category: (category.trim() || 'general'),
+                    enabled: true
+                });
+                
+                // 更新配置
+                await updateConfig({ filters: filters });
+                loadFilters();
+            } catch (error) {
+                console.error('添加過濾詞失敗:', error);
+                alert('添加失敗：' + error.message);
             }
-            
-            ContentFilter.addFilter(word.trim(), category.trim() || 'general');
-            loadFilters();
         }
         
-        function editFilter(id) {
-            if (typeof ContentFilter === 'undefined') return;
-            
-            const filters = ContentFilter.getFilters();
-            const filter = filters.find(f => f.id === id);
-            if (!filter) return;
-            
-            const newWord = prompt('請輸入新的過濾詞：', filter.word);
-            if (!newWord || !newWord.trim()) return;
-            
-            const newCategory = prompt('請輸入新的分類：', filter.category);
-            
-            ContentFilter.updateFilter(id, {
-                word: newWord.trim(),
-                category: newCategory.trim() || filter.category
-            });
-            loadFilters();
+        async function editFilter(id) {
+            try {
+                // 先獲取當前配置
+                const response = await fetch('https://oldfish-profile.vercel.app/api/get-config');
+                const data = await response.json();
+                if (!data.success || !data.config) throw new Error('無法獲取當前配置');
+                
+                const config = data.config;
+                const filters = Array.isArray(config.filters) ? config.filters : [];
+                const filter = filters.find(f => f.id === id);
+                if (!filter) {
+                    alert('找不到該過濾詞');
+                    return;
+                }
+                
+                const newWord = prompt('請輸入新的過濾詞：', filter.word);
+                if (!newWord || !newWord.trim()) return;
+                
+                const newCategory = prompt('請輸入新的分類：', filter.category);
+                
+                // 更新過濾詞
+                const index = filters.findIndex(f => f.id === id);
+                if (index !== -1) {
+                    filters[index] = {
+                        ...filters[index],
+                        word: newWord.trim(),
+                        category: (newCategory.trim() || filter.category)
+                    };
+                    
+                    // 更新配置
+                    await updateConfig({ filters: filters });
+                    loadFilters();
+                }
+            } catch (error) {
+                console.error('編輯過濾詞失敗:', error);
+                alert('編輯失敗：' + error.message);
+            }
         }
         
-        function removeFilter(id) {
+        async function removeFilter(id) {
             if (!confirm('確定要刪除這個過濾詞嗎？')) return;
             
-            if (typeof ContentFilter === 'undefined') return;
-            ContentFilter.removeFilter(id);
-            loadFilters();
+            try {
+                // 先獲取當前配置
+                const response = await fetch('https://oldfish-profile.vercel.app/api/get-config');
+                const data = await response.json();
+                if (!data.success || !data.config) throw new Error('無法獲取當前配置');
+                
+                const config = data.config;
+                const filters = Array.isArray(config.filters) ? config.filters : [];
+                const filtered = filters.filter(f => f.id !== id);
+                
+                if (filtered.length === filters.length) {
+                    alert('找不到該過濾詞');
+                    return;
+                }
+                
+                // 更新配置
+                await updateConfig({ filters: filtered });
+                loadFilters();
+            } catch (error) {
+                console.error('刪除過濾詞失敗:', error);
+                alert('刪除失敗：' + error.message);
+            }
+        }
+        
+        // 更新配置的通用函數
+        async function updateConfig(updates) {
+            try {
+                // 先獲取當前配置
+                const response = await fetch('https://oldfish-profile.vercel.app/api/get-config');
+                const data = await response.json();
+                if (!data.success || !data.config) throw new Error('無法獲取當前配置');
+                
+                const currentConfig = data.config;
+                const newConfig = { ...currentConfig, ...updates };
+                
+                // 發送更新請求
+                const updateResponse = await fetch('https://oldfish-profile.vercel.app/api/update-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newConfig)
+                });
+                
+                if (!updateResponse.ok) {
+                    const errorData = await updateResponse.json().catch(() => ({}));
+                    throw new Error(errorData.error || '更新失敗');
+                }
+                
+                const updateData = await updateResponse.json();
+                if (!updateData.success) {
+                    throw new Error(updateData.error || '更新失敗');
+                }
+                
+                // 清除緩存，強制重新載入
+                if (typeof ContentFilter !== 'undefined' && ContentFilter.clearCache) {
+                    ContentFilter.clearCache();
+                }
+                if (typeof ConfigManager !== 'undefined' && ConfigManager.clearCache) {
+                    ConfigManager.clearCache();
+                }
+                
+                return updateData;
+            } catch (error) {
+                console.error('更新配置失敗:', error);
+                throw error;
+            }
         }
         
         // ============================================
         // 功能開關功能
         // ============================================
-        function loadSettings() {
-            const enabled = localStorage.getItem('whisperEnabled');
-            const toggle = document.getElementById('whisperEnabledToggle');
-            if (toggle) {
-                toggle.checked = enabled === null || enabled === 'true';
+        async function loadSettings() {
+            try {
+                const response = await fetch('https://oldfish-profile.vercel.app/api/get-config');
+                if (!response.ok) throw new Error('Failed to fetch config');
+                
+                const data = await response.json();
+                if (data.success && data.config) {
+                    const toggle = document.getElementById('whisperEnabledToggle');
+                    if (toggle) {
+                        toggle.checked = data.config.whisperEnabled !== false;
+                    }
+                }
+            } catch (error) {
+                console.error('載入功能開關失敗:', error);
+                // 出錯時預設啟用
+                const toggle = document.getElementById('whisperEnabledToggle');
+                if (toggle) {
+                    toggle.checked = true;
+                }
             }
         }
         
-        function toggleWhisperEnabled() {
+        async function toggleWhisperEnabled() {
             const enabled = document.getElementById('whisperEnabledToggle').checked;
-            localStorage.setItem('whisperEnabled', enabled.toString());
-            alert(enabled ? '悄悄話功能已啟用' : '悄悄話功能已關閉');
+            try {
+                await updateConfig({ whisperEnabled: enabled });
+                alert(enabled ? '悄悄話功能已啟用（全站生效）' : '悄悄話功能已關閉（全站生效）');
+            } catch (error) {
+                console.error('更新功能開關失敗:', error);
+                alert('更新失敗：' + error.message);
+                // 恢復原狀態
+                document.getElementById('whisperEnabledToggle').checked = !enabled;
+            }
         }
         
         // ============================================

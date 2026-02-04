@@ -1,5 +1,5 @@
 // ============================================
-// 內容過濾器系統
+// 內容過濾器系統（伺服器端配置）
 // ============================================
 
 const ContentFilter = {
@@ -8,29 +8,23 @@ const ContentFilter = {
     FILTER_STATS_KEY: 'filterStats',
     BLOCKED_LOG_KEY: 'blockedMessages',
     MAX_BLOCKED_LOGS: 200,
+    CONFIG_CACHE_KEY: 'filterConfigCache',
+    CONFIG_CACHE_TIME: 5 * 60 * 1000, // 5分鐘緩存
+    API_ENDPOINT: 'https://oldfish-profile.vercel.app/api/get-config',
+    
+    // 配置緩存
+    _configCache: null,
+    _configCacheTime: null,
     
     // 初始化
     init() {
         this.ensureStorage();
+        // 異步載入伺服器配置
+        this.loadServerConfig();
     },
     
-    // 確保存儲結構存在
+    // 確保存儲結構存在（僅用於統計和本地日誌）
     ensureStorage() {
-        // 初始化過濾詞列表
-        if (!localStorage.getItem(this.STORAGE_KEY)) {
-            const defaultFilters = [
-                { id: 1, word: '垃圾', category: 'spam', enabled: true },
-                { id: 2, word: '廣告', category: 'spam', enabled: true },
-                { id: 3, word: '詐騙', category: 'fraud', enabled: true }
-            ];
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(defaultFilters));
-        }
-        
-        // 初始化過濾器開關（預設啟用）
-        if (localStorage.getItem(this.FILTER_ENABLED_KEY) === null) {
-            localStorage.setItem(this.FILTER_ENABLED_KEY, 'true');
-        }
-        
         // 初始化過濾統計
         if (!localStorage.getItem(this.FILTER_STATS_KEY)) {
             localStorage.setItem(this.FILTER_STATS_KEY, JSON.stringify({
@@ -46,71 +40,80 @@ const ContentFilter = {
         }
     },
     
-    // 獲取過濾詞列表
+    // 從伺服器載入配置
+    async loadServerConfig() {
+        try {
+            // 檢查緩存
+            const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+            const cacheTime = localStorage.getItem(this.CONFIG_CACHE_KEY + '_time');
+            
+            if (cached && cacheTime) {
+                const age = Date.now() - parseInt(cacheTime);
+                if (age < this.CONFIG_CACHE_TIME) {
+                    this._configCache = JSON.parse(cached);
+                    this._configCacheTime = parseInt(cacheTime);
+                    return;
+                }
+            }
+            
+            // 從 API 載入
+            const response = await fetch(this.API_ENDPOINT);
+            if (!response.ok) throw new Error('Failed to fetch config');
+            
+            const data = await response.json();
+            if (data.success && data.config) {
+                this._configCache = data.config;
+                this._configCacheTime = Date.now();
+                
+                // 更新緩存
+                localStorage.setItem(this.CONFIG_CACHE_KEY, JSON.stringify(data.config));
+                localStorage.setItem(this.CONFIG_CACHE_KEY + '_time', this._configCacheTime.toString());
+            }
+        } catch (error) {
+            console.error('載入伺服器配置失敗:', error);
+            // 使用緩存或預設值
+            const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+            if (cached) {
+                this._configCache = JSON.parse(cached);
+            }
+        }
+    },
+    
+    // 獲取當前配置（同步，使用緩存）
+    getConfig() {
+        if (this._configCache) {
+            return this._configCache;
+        }
+        
+        // 嘗試從緩存讀取
+        const cached = localStorage.getItem(this.CONFIG_CACHE_KEY);
+        if (cached) {
+            this._configCache = JSON.parse(cached);
+            return this._configCache;
+        }
+        
+        // 返回預設配置
+        return {
+            whisperEnabled: true,
+            filterEnabled: true,
+            filters: [
+                { id: 1, word: '垃圾', category: 'spam', enabled: true },
+                { id: 2, word: '廣告', category: 'spam', enabled: true },
+                { id: 3, word: '詐騙', category: 'fraud', enabled: true }
+            ]
+        };
+    },
+    
+    // 獲取過濾詞列表（從伺服器配置）
     getFilters() {
-        try {
-            const data = localStorage.getItem(this.STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        } catch (error) {
-            console.error('讀取過濾詞失敗:', error);
-            return [];
-        }
+        const config = this.getConfig();
+        return Array.isArray(config.filters) ? config.filters : [];
     },
     
-    // 保存過濾詞列表
-    saveFilters(filters) {
-        try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filters));
-        } catch (error) {
-            console.error('保存過濾詞失敗:', error);
-        }
-    },
-    
-    // 添加過濾詞
-    addFilter(word, category = 'general') {
-        const filters = this.getFilters();
-        const newId = filters.length > 0 ? Math.max(...filters.map(f => f.id)) + 1 : 1;
-        
-        filters.push({
-            id: newId,
-            word: word.trim(),
-            category: category,
-            enabled: true
-        });
-        
-        this.saveFilters(filters);
-        return newId;
-    },
-    
-    // 刪除過濾詞
-    removeFilter(id) {
-        const filters = this.getFilters();
-        const filtered = filters.filter(f => f.id !== id);
-        this.saveFilters(filtered);
-        return filtered.length < filters.length;
-    },
-    
-    // 更新過濾詞
-    updateFilter(id, updates) {
-        const filters = this.getFilters();
-        const index = filters.findIndex(f => f.id === id);
-        
-        if (index !== -1) {
-            filters[index] = { ...filters[index], ...updates };
-            this.saveFilters(filters);
-            return true;
-        }
-        return false;
-    },
-    
-    // 檢查過濾器是否啟用
+    // 檢查過濾器是否啟用（從伺服器配置）
     isEnabled() {
-        return localStorage.getItem(this.FILTER_ENABLED_KEY) === 'true';
-    },
-    
-    // 設置過濾器開關
-    setEnabled(enabled) {
-        localStorage.setItem(this.FILTER_ENABLED_KEY, enabled.toString());
+        const config = this.getConfig();
+        return config.filterEnabled !== false;
     },
     
     // 檢測文本中的過濾詞
@@ -241,6 +244,20 @@ const ContentFilter = {
             blockedByCategory: {},
             lastBlocked: null
         }));
+    },
+    
+    // 清除配置緩存（強制重新載入）
+    clearCache() {
+        this._configCache = null;
+        this._configCacheTime = null;
+        localStorage.removeItem(this.CONFIG_CACHE_KEY);
+        localStorage.removeItem(this.CONFIG_CACHE_KEY + '_time');
+    },
+    
+    // 強制重新載入配置（清除緩存並重新載入）
+    async refreshConfig() {
+        this.clearCache();
+        await this.loadServerConfig();
     }
 };
 
